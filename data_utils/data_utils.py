@@ -55,3 +55,21 @@ class TrajectoryDataset(Dataset):
             return {'history': history, 'future': future}
         else:
             return {'history': history}
+        
+    def denormalize_positions(self, normalized_positions):
+        """
+        Convert normalized position values back to the original scale
+        
+        Args:
+            normalized_positions: Tensor or numpy array of shape [..., 2]
+                containing normalized x,y coordinates
+        
+        Returns:
+            Denormalized positions in the original coordinate space
+        """
+        if isinstance(normalized_positions, torch.Tensor):
+            return normalized_positions * torch.tensor(self.pos_std, 
+                        device=normalized_positions.device) + torch.tensor(self.pos_mean, 
+                        device=normalized_positions.device)
+        else:
+            return normalized_positions * self.pos_std + self.pos_mean
