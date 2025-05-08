@@ -152,3 +152,86 @@ def train_model(model, train_loader, val_loader, train_original_dataset, val_ori
                   f'{avg_val_loss_denorm:.2f} (denormalized)')
     
     return model
+
+
+def debug_predictions(model, val_loader, val_dataset, num_examples=5):
+    """
+    Generate and visualize predictions vs ground truth for debugging
+    
+    Args:
+        model: Trained model
+        val_loader: DataLoader for validation data
+        val_dataset: Original validation dataset for denormalization
+        num_examples: Number of examples to visualize
+    """
+    import matplotlib.pyplot as plt
+    from data_utils.feature_engineering import compute_constant_velocity
+    
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = model.to(device)
+    model.eval()
+    
+    # Process a few batches for visualization
+    example_count = 0
+    with torch.no_grad():
+        for batch in val_loader:
+            # Handle different batch structures
+            if isinstance(batch, dict):
+                history = batch['history'].to(device)
+                future = batch['future'].to(device)
+            else:
+                history, future = batch
+                history = history.to(device)
+                future = future.to(device)
+            
+            # Prepare input data dictionary
+            data = {'history': history}
+            
+            # Get model predictions
+            model_pred = model(data)
+            
+            # Get baseline predictions
+            baseline_pred = compute_constant_velocity(history)
+            
+            # Denormalize for visualization
+            history_denorm = val_dataset.denormalize_positions(history[:, 0, :, :2])
+            future_denorm = val_dataset.denormalize_positions(future)
+            model_pred_denorm = val_dataset.denormalize_positions(model_pred)
+            baseline_pred_denorm = val_dataset.denormalize_positions(baseline_pred)
+            
+            # Visualize a few examples
+            for i in range(min(history.shape[0], num_examples - example_count)):
+                plt.figure(figsize=(12, 8))
+                
+                # Plot history
+                plt.plot(history_denorm[i, :, 0].cpu().numpy(), 
+                        history_denorm[i, :, 1].cpu().numpy(), 
+                        'ko-', label='History')
+                
+                # Plot ground truth future
+                plt.plot(future_denorm[i, :, 0].cpu().numpy(), 
+                        future_denorm[i, :, 1].cpu().numpy(), 
+                        'go-', label='Ground Truth')
+                
+                # Plot model prediction
+                plt.plot(model_pred_denorm[i, :, 0].cpu().numpy(), 
+                        model_pred_denorm[i, :, 1].cpu().numpy(), 
+                        'bo-', label='Model Prediction')
+                
+                # Plot baseline prediction
+                plt.plot(baseline_pred_denorm[i, :, 0].cpu().numpy(), 
+                        baseline_pred_denorm[i, :, 1].cpu().numpy(), 
+                        'ro-', label='Constant Velocity')
+                
+                plt.xlabel('X Position')
+                plt.ylabel('Y Position')
+                plt.title(f'Trajectory Example {example_count + 1}')
+                plt.legend()
+                plt.grid(True)
+                plt.savefig(f'trajectory_example_{example_count + 1}.png')
+                plt.close()
+                
+                example_count += 1
+            
+            if example_count >= num_examples:
+                break

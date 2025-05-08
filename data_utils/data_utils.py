@@ -8,6 +8,22 @@ class TrajectoryDataset(Dataset):
         self.data = data['data']
         self.split = split
         
+        # Extract agent types if available in the data
+        self.has_agent_types = 'agent_types' in data
+        self.agent_types = data.get('agent_types', None)
+        self.agent_type_mapping = {
+            'vehicle': 0,
+            'pedestrian': 1,
+            'motorcyclist': 2,
+            'cyclist': 3,
+            'bus': 4,
+            'static': 5,
+            'background': 6,
+            'construction': 7,
+            'riderless_bicycle': 8,
+            'unknown': 9
+        }
+        
         # Normalize coordinates to improve training stability
         if split == 'train':
             # For training data, separate history and future
@@ -50,11 +66,19 @@ class TrajectoryDataset(Dataset):
         # Convert to tensors
         history = torch.tensor(self.history_normalized[idx], dtype=torch.float32)
         
+        # Get agent types if available
+        if self.has_agent_types:
+            agent_types = torch.tensor(self.agent_types[idx], dtype=torch.long)
+        else:
+            # If agent types not provided, use default type (unknown)
+            agent_types = torch.full((history.shape[0],), self.agent_type_mapping['unknown'], 
+                                     dtype=torch.long)
+        
         if self.split == 'train':
             future = torch.tensor(self.future_normalized[idx], dtype=torch.float32)
-            return {'history': history, 'future': future}
+            return {'history': history, 'future': future, 'agent_types': agent_types}
         else:
-            return {'history': history}
+            return {'history': history, 'agent_types': agent_types}
         
     def denormalize_positions(self, normalized_positions):
         """
@@ -73,3 +97,7 @@ class TrajectoryDataset(Dataset):
                         device=normalized_positions.device)
         else:
             return normalized_positions * self.pos_std + self.pos_mean
+            
+    def get_num_agent_types(self):
+        """Return the number of agent types"""
+        return len(self.agent_type_mapping)
