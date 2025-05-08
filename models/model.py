@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 # from data_utils.feature_engineering_oldslow import process_batch
-from data_utils.feature_engineering import process_batch_sparse, process_batch_radius_pure_torch
+from data_utils.feature_engineering import process_batch_radius
 from .gnn_modules import GNNEncoder
 from .sequence_modules import TransformerEncoder, LSTMEncoder
 from .trajectory_decoder import TrajectoryDecoder
@@ -48,7 +48,7 @@ class GNNSequenceModel(nn.Module):
         batch_size, num_agents, seq_len, feat_dim = data['history'].shape
         
         # Process batch to get GNN inputs
-        node_feats, edge_index, edge_attr = process_batch_radius_pure_torch(data['history'])
+        node_feats, edge_index, edge_attr = process_batch_radius(data['history'])
         # print("processed batch done")
         # Apply GNN for spatial/social reasoning
         gnn_encoded = self.gnn_encoder(node_feats.reshape(-1, feat_dim), edge_index, edge_attr)
