@@ -3,6 +3,8 @@
 /submission.csv
 /main.ipynb
 /normalization_stats.npz
+/debug_visualizations
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

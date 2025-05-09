@@ -13,7 +13,7 @@ def generate_predictions(model, test_loader, test_dataset):
     
     with torch.no_grad():
         for batch in tqdm(test_loader):
-            # Handle the batch appropriately based on your dataset
+            # Handle different batch structures
             if isinstance(batch, dict):
                 history = batch['history'].to(device)
             else:
@@ -23,11 +23,18 @@ def generate_predictions(model, test_loader, test_dataset):
             # Prepare input data dictionary
             data = {'history': history}
             
-            # Get predictions (normalized)
-            normalized_predictions = model(data)
+            # Calculate baseline predictions
+            from data_utils.feature_engineering import compute_constant_velocity
+            baseline_pred = compute_constant_velocity(history)
+            
+            # Get model predictions (as residuals)
+            residuals = model(data)
+            
+            # Apply residuals to baseline
+            predictions = baseline_pred + residuals
             
             # Denormalize predictions before saving
-            denormalized_predictions = test_dataset.denormalize_positions(normalized_predictions)
+            denormalized_predictions = test_dataset.denormalize_positions(predictions)
             
             # Move predictions back to CPU
             denormalized_predictions = denormalized_predictions.cpu().numpy()

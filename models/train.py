@@ -2,6 +2,51 @@ import os
 import torch
 import torch.nn as nn
 from tqdm import tqdm
+from data_utils.feature_engineering import compute_constant_velocity
+
+# Add this to your training code before the main training loop
+def pretrain_for_residuals(model, train_loader, num_epochs=5):
+    """Pre-train model to predict zero residuals"""
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = model.to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    criterion = nn.MSELoss()
+    
+    for epoch in range(num_epochs):
+        model.train()
+        total_loss = 0.0
+        
+        for batch in train_loader:
+            if isinstance(batch, dict):
+                history = batch['history'].to(device)
+                future = batch['future'].to(device)
+            else:
+                history, future = batch
+                history = history.to(device)
+                future = future.to(device)
+            
+            # Get constant velocity predictions
+            const_vel_pred = compute_constant_velocity(history)
+            
+            # Target residuals should be zero
+            target_residuals = torch.zeros_like(const_vel_pred)
+            
+            # Forward pass
+            optimizer.zero_grad()
+            data = {'history': history}
+            predicted_residuals = model(data) - const_vel_pred  # Ensure we're training to predict zero residuals
+            
+            # Loss based on residual prediction
+            loss = criterion(predicted_residuals, target_residuals)
+            loss.backward()
+            optimizer.step()
+            
+            total_loss += loss.item()
+            
+        print(f'Pretraining Epoch [{epoch+1}/{num_epochs}], Loss: {total_loss/len(train_loader):.4f}')
+    
+    return model
+
 
 def train_model(model, train_loader, val_loader, train_original_dataset, val_original_dataset, num_epochs=30):
     """
@@ -21,9 +66,9 @@ def train_model(model, train_loader, val_loader, train_original_dataset, val_ori
     
     # Loss function and optimizer
     criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', factor=0.5, patience=3
+        optimizer, mode='min', factor=0.2, patience=3
     )
     
     # Training loop
@@ -60,10 +105,16 @@ def train_model(model, train_loader, val_loader, train_original_dataset, val_ori
             # Prepare input data dictionary
             data = {'history': history}
             
-            # Get predictions (normalized)
-            predictions = model(data)
+            # Calculate baseline predictions
+            baseline_pred = compute_constant_velocity(history)
             
-            # Calculate normalized loss (for backpropagation)
+            # Get model predictions (as residuals)
+            residuals = model(data)
+            
+            # Apply residuals to baseline
+            predictions = baseline_pred + residuals
+            
+            # Calculate loss against ground truth
             loss_normalized = criterion(predictions, future)
             
             # Calculate denormalized loss (for information)
@@ -110,8 +161,14 @@ def train_model(model, train_loader, val_loader, train_original_dataset, val_ori
                 # Prepare input data dictionary
                 data = {'history': history}
                 
-                # Get predictions
-                predictions = model(data)
+                # Calculate baseline predictions
+                baseline_pred = compute_constant_velocity(history)
+                
+                # Get model predictions (as residuals)
+                residuals = model(data)
+                
+                # Apply residuals to baseline
+                predictions = baseline_pred + residuals
                 
                 # Calculate normalized loss
                 loss_normalized = criterion(predictions, future)
@@ -165,14 +222,25 @@ def debug_predictions(model, val_loader, val_dataset, num_examples=5):
         num_examples: Number of examples to visualize
     """
     import matplotlib.pyplot as plt
+    import numpy as np
     from data_utils.feature_engineering import compute_constant_velocity
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
     model.eval()
     
+    # Create output directory for visualizations
+    os.makedirs('debug_visualizations', exist_ok=True)
+    
     # Process a few batches for visualization
     example_count = 0
+    
+    # Calculate error metrics
+    model_ade_sum = 0.0
+    baseline_ade_sum = 0.0
+    model_fde_sum = 0.0
+    baseline_fde_sum = 0.0
+    
     with torch.no_grad():
         for batch in val_loader:
             # Handle different batch structures
@@ -187,11 +255,12 @@ def debug_predictions(model, val_loader, val_dataset, num_examples=5):
             # Prepare input data dictionary
             data = {'history': history}
             
-            # Get model predictions
-            model_pred = model(data)
-            
             # Get baseline predictions
             baseline_pred = compute_constant_velocity(history)
+            
+            # Get model predictions
+            residuals = model(data)
+            model_pred = baseline_pred + residuals
             
             # Denormalize for visualization
             history_denorm = val_dataset.denormalize_positions(history[:, 0, :, :2])
@@ -199,39 +268,81 @@ def debug_predictions(model, val_loader, val_dataset, num_examples=5):
             model_pred_denorm = val_dataset.denormalize_positions(model_pred)
             baseline_pred_denorm = val_dataset.denormalize_positions(baseline_pred)
             
+            # Calculate ADE and FDE for this batch
+            for i in range(history.shape[0]):
+                # Calculate ADE (Average Displacement Error)
+                model_ade = torch.mean(torch.sqrt(torch.sum((model_pred_denorm[i] - future_denorm[i])**2, dim=1)))
+                baseline_ade = torch.mean(torch.sqrt(torch.sum((baseline_pred_denorm[i] - future_denorm[i])**2, dim=1)))
+                
+                # Calculate FDE (Final Displacement Error)
+                model_fde = torch.sqrt(torch.sum((model_pred_denorm[i, -1] - future_denorm[i, -1])**2))
+                baseline_fde = torch.sqrt(torch.sum((baseline_pred_denorm[i, -1] - future_denorm[i, -1])**2))
+                
+                model_ade_sum += model_ade.item()
+                baseline_ade_sum += baseline_ade.item()
+                model_fde_sum += model_fde.item()
+                baseline_fde_sum += baseline_fde.item()
+            
             # Visualize a few examples
             for i in range(min(history.shape[0], num_examples - example_count)):
                 plt.figure(figsize=(12, 8))
                 
+                # Extract the first agent's history (assuming history shape is [batch, agents, time, features])
+                # If history shape is different, adjust accordingly
+                if history_denorm.dim() > 3:  # If history includes multiple agents
+                    agent_history = history_denorm[i, 0, :, :2].cpu().numpy()
+                else:  # If history is just for one agent
+                    agent_history = history_denorm[i, :, :2].cpu().numpy()
+                
                 # Plot history
-                plt.plot(history_denorm[i, :, 0].cpu().numpy(), 
-                        history_denorm[i, :, 1].cpu().numpy(), 
-                        'ko-', label='History')
+                plt.plot(agent_history[:, 0], agent_history[:, 1], 'ko-', label='History', markersize=4)
                 
                 # Plot ground truth future
-                plt.plot(future_denorm[i, :, 0].cpu().numpy(), 
-                        future_denorm[i, :, 1].cpu().numpy(), 
-                        'go-', label='Ground Truth')
+                future_path = future_denorm[i, :, :2].cpu().numpy()
+                plt.plot(future_path[:, 0], future_path[:, 1], 'go-', label='Ground Truth', markersize=4)
                 
                 # Plot model prediction
-                plt.plot(model_pred_denorm[i, :, 0].cpu().numpy(), 
-                        model_pred_denorm[i, :, 1].cpu().numpy(), 
-                        'bo-', label='Model Prediction')
+                model_path = model_pred_denorm[i, :, :2].cpu().numpy()
+                plt.plot(model_path[:, 0], model_path[:, 1], 'bo-', label='Model Prediction', markersize=4)
                 
                 # Plot baseline prediction
-                plt.plot(baseline_pred_denorm[i, :, 0].cpu().numpy(), 
-                        baseline_pred_denorm[i, :, 1].cpu().numpy(), 
-                        'ro-', label='Constant Velocity')
+                baseline_path = baseline_pred_denorm[i, :, :2].cpu().numpy()
+                plt.plot(baseline_path[:, 0], baseline_path[:, 1], 'ro-', label='Constant Velocity', markersize=4)
+                
+                # Calculate errors for this example
+                model_ade_i = np.mean(np.sqrt(np.sum((model_path - future_path)**2, axis=1)))
+                baseline_ade_i = np.mean(np.sqrt(np.sum((baseline_path - future_path)**2, axis=1)))
+                model_fde_i = np.sqrt(np.sum((model_path[-1] - future_path[-1])**2))
+                baseline_fde_i = np.sqrt(np.sum((baseline_path[-1] - future_path[-1])**2))
                 
                 plt.xlabel('X Position')
                 plt.ylabel('Y Position')
-                plt.title(f'Trajectory Example {example_count + 1}')
+                plt.title(f'Trajectory Example {example_count + 1}\n'
+                          f'Model ADE: {model_ade_i:.2f}, FDE: {model_fde_i:.2f}\n'
+                          f'Baseline ADE: {baseline_ade_i:.2f}, FDE: {baseline_fde_i:.2f}')
                 plt.legend()
                 plt.grid(True)
-                plt.savefig(f'trajectory_example_{example_count + 1}.png')
+                
+                # Add markers for start and end points
+                plt.scatter(agent_history[0, 0], agent_history[0, 1], c='k', s=100, marker='*', label='Start')
+                plt.scatter(future_path[-1, 0], future_path[-1, 1], c='g', s=100, marker='*', label='GT End')
+                plt.scatter(model_path[-1, 0], model_path[-1, 1], c='b', s=100, marker='*', label='Model End')
+                plt.scatter(baseline_path[-1, 0], baseline_path[-1, 1], c='r', s=100, marker='*', label='Baseline End')
+                
+                # Save with higher resolution
+                plt.savefig(f'debug_visualizations/trajectory_example_{example_count + 1}.png', dpi=300, bbox_inches='tight')
                 plt.close()
                 
                 example_count += 1
             
             if example_count >= num_examples:
                 break
+    
+    # Print overall metrics
+    total_examples = min(example_count, num_examples)
+    if total_examples > 0:
+        print(f"\nOverall metrics for {total_examples} examples:")
+        print(f"Model ADE: {model_ade_sum/total_examples:.2f}, FDE: {model_fde_sum/total_examples:.2f}")
+        print(f"Baseline ADE: {baseline_ade_sum/total_examples:.2f}, FDE: {baseline_fde_sum/total_examples:.2f}")
+        print(f"Improvement: {((baseline_ade_sum - model_ade_sum)/baseline_ade_sum)*100:.2f}% in ADE, "
+              f"{((baseline_fde_sum - model_fde_sum)/baseline_fde_sum)*100:.2f}% in FDE")

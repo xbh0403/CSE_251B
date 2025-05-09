@@ -1,0 +1,400 @@
+Epoch [85/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.78
+Epoch [85/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.99
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.01it/s]
+Epoch [86/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.77
+Epoch [86/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 37.06
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.06it/s]
+Epoch [87/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.81
+Epoch [87/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 37.08
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.10it/s]
+Epoch [88/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.77
+Epoch [88/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 37.07
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.04it/s]
+Epoch [89/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.76
+Epoch [89/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.96
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.10it/s]
+Epoch [90/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.70
+Epoch [90/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.94
+Model saved with validation loss: 0.0000 (normalized), 36.94 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.06it/s]
+Epoch [91/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.68
+Epoch [91/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.93
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.03it/s]
+Epoch [92/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.70
+Epoch [92/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.87
+Model saved with validation loss: 0.0000 (normalized), 36.87 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.08it/s]
+Epoch [93/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.74
+Epoch [93/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 37.06
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.04it/s]
+Epoch [94/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.70
+Epoch [94/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.84
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.08it/s]
+Epoch [95/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.75
+Epoch [95/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.86
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.07it/s]
+Epoch [96/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.72
+Epoch [96/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.80
+Model saved with validation loss: 0.0000 (normalized), 36.80 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.06it/s]
+Epoch [97/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.67
+Epoch [97/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.89
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.04it/s]
+Epoch [98/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.63
+Epoch [98/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.82
+Model saved with validation loss: 0.0000 (normalized), 36.82 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.07it/s]
+Epoch [99/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.64
+Epoch [99/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.78
+Model saved with validation loss: 0.0000 (normalized), 36.78 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.08it/s]
+Epoch [100/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.59
+Epoch [100/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.74
+Model saved with validation loss: 0.0000 (normalized), 36.74 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.08it/s]
+Epoch [101/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.60
+Epoch [101/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.71
+Model saved with validation loss: 0.0000 (normalized), 36.71 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.06it/s]
+Epoch [102/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.57
+Epoch [102/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.70
+Model saved with validation loss: 0.0000 (normalized), 36.70 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.10it/s]
+Epoch [103/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.55
+Epoch [103/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.68
+Model saved with validation loss: 0.0000 (normalized), 36.68 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.07it/s]
+Epoch [104/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.52
+Epoch [104/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.69
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.08it/s]
+Epoch [105/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.51
+Epoch [105/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.87
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.08it/s]
+Epoch [106/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.57
+Epoch [106/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.71
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.09it/s]
+Epoch [107/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.53
+Epoch [107/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.65
+Model saved with validation loss: 0.0000 (normalized), 36.65 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.09it/s]
+Epoch [108/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.52
+Epoch [108/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.73
+Model saved with validation loss: 0.0000 (normalized), 36.73 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.06it/s]
+Epoch [109/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.46
+Epoch [109/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.72
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.08it/s]
+Epoch [110/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.43
+Epoch [110/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.91
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.07it/s]
+Epoch [111/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.41
+Epoch [111/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.66
+Model saved with validation loss: 0.0000 (normalized), 36.66 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.06it/s]
+Epoch [112/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.49
+Epoch [112/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.67
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.07it/s]
+Epoch [113/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.44
+Epoch [113/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.68
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.08it/s]
+Epoch [114/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.42
+Epoch [114/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.64
+Model saved with validation loss: 0.0000 (normalized), 36.64 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.05it/s]
+Epoch [115/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.40
+Epoch [115/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.60
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.09it/s]
+Epoch [116/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.39
+Epoch [116/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.53
+Model saved with validation loss: 0.0000 (normalized), 36.53 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.08it/s]
+Epoch [117/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.37
+Epoch [117/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.52
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.07it/s]
+Epoch [118/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.37
+Epoch [118/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.76
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.08it/s]
+Epoch [119/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.29
+Epoch [119/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 37.10
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.09it/s]
+Epoch [120/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.33
+Epoch [120/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.65
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.09it/s]
+Epoch [121/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.34
+Epoch [121/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.49
+Model saved with validation loss: 0.0000 (normalized), 36.49 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.03it/s]
+Epoch [122/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.28
+Epoch [122/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.60
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.06it/s]
+Epoch [123/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.23
+Epoch [123/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.41
+Model saved with validation loss: 0.0000 (normalized), 36.41 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.07it/s]
+Epoch [124/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.26
+Epoch [124/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.40
+Model saved with validation loss: 0.0000 (normalized), 36.40 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.07it/s]
+Epoch [125/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.24
+Epoch [125/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.44
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.11it/s]
+Epoch [126/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.18
+Epoch [126/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.52
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.05it/s]
+Epoch [127/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.18
+Epoch [127/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.39
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.01it/s]
+Epoch [128/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.13
+Epoch [128/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.70
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.09it/s]
+Epoch [129/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.16
+Epoch [129/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.49
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.08it/s]
+Epoch [130/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.11
+Epoch [130/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.52
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.05it/s]
+Epoch [131/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.12
+Epoch [131/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.40
+Model saved with validation loss: 0.0000 (normalized), 36.40 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.05it/s]
+Epoch [132/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.15
+Epoch [132/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.40
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.02it/s]
+Epoch [133/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.10
+Epoch [133/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.23
+Model saved with validation loss: 0.0000 (normalized), 36.23 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.06it/s]
+Epoch [134/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.05
+Epoch [134/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.43
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.05it/s]
+Epoch [135/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.07
+Epoch [135/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.30
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.10it/s]
+Epoch [136/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.07
+Epoch [136/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.20
+Model saved with validation loss: 0.0000 (normalized), 36.20 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.02it/s]
+Epoch [137/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.02
+Epoch [137/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.19
+Model saved with validation loss: 0.0000 (normalized), 36.19 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.03it/s]
+Epoch [138/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.02
+Epoch [138/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.18
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.06it/s]
+Epoch [139/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.03
+Epoch [139/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.24
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.05it/s]
+Epoch [140/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 36.03
+Epoch [140/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.17
+Model saved with validation loss: 0.0000 (normalized), 36.17 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.06it/s]
+Epoch [141/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.97
+Epoch [141/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.23
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.06it/s]
+Epoch [142/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.95
+Epoch [142/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.12
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.04it/s]
+Epoch [143/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.95
+Epoch [143/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.23
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.02it/s]
+Epoch [144/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.93
+Epoch [144/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.13
+Model saved with validation loss: 0.0000 (normalized), 36.13 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.08it/s]
+Epoch [145/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.89
+Epoch [145/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.28
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.08it/s]
+Epoch [146/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.89
+Epoch [146/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.14
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.07it/s]
+Epoch [147/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.90
+Epoch [147/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.16
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.08it/s]
+Epoch [148/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.89
+Epoch [148/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.12
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.08it/s]
+Epoch [149/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.83
+Epoch [149/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.09
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.07it/s]
+Epoch [150/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.85
+Epoch [150/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.07
+Model saved with validation loss: 0.0000 (normalized), 36.07 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.07it/s]
+Epoch [151/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.88
+Epoch [151/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.08
+Model saved with validation loss: 0.0000 (normalized), 36.08 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.04it/s]
+Epoch [152/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.80
+Epoch [152/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.29
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.06it/s]
+Epoch [153/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.79
+Epoch [153/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.05
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.00it/s]
+Epoch [154/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.75
+Epoch [154/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.14
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.07it/s]
+Epoch [155/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.75
+Epoch [155/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.98
+Model saved with validation loss: 0.0000 (normalized), 35.98 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.00it/s]
+Epoch [156/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.79
+Epoch [156/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.02
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:18<00:00,  6.60it/s]
+Epoch [157/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.74
+Epoch [157/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.01
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:19<00:00,  6.54it/s]
+Epoch [158/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.68
+Epoch [158/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.02
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:19<00:00,  6.54it/s]
+Epoch [159/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.71
+Epoch [159/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.96
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:18<00:00,  6.61it/s]
+Epoch [160/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.68
+Epoch [160/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.00
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:19<00:00,  6.56it/s]
+Epoch [161/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.64
+Epoch [161/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.96
+Model saved with validation loss: 0.0000 (normalized), 35.96 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:18<00:00,  6.58it/s]
+Epoch [162/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.65
+Epoch [162/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.83
+Model saved with validation loss: 0.0000 (normalized), 35.83 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:19<00:00,  6.50it/s]
+Epoch [163/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.64
+Epoch [163/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.96
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:19<00:00,  6.50it/s]
+Epoch [164/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.69
+Epoch [164/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.81
+Model saved with validation loss: 0.0000 (normalized), 35.81 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.04it/s]
+Epoch [165/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.62
+Epoch [165/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.05
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.04it/s]
+Epoch [166/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.59
+Epoch [166/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.78
+Model saved with validation loss: 0.0000 (normalized), 35.78 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.02it/s]
+Epoch [167/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.65
+Epoch [167/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.87
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.03it/s]
+Epoch [168/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.60
+Epoch [168/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.85
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:19<00:00,  6.57it/s]
+Epoch [169/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.60
+Epoch [169/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 36.00
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:18<00:00,  6.60it/s]
+Epoch [170/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.67
+Epoch [170/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.80
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:18<00:00,  6.63it/s]
+Epoch [171/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.56
+Epoch [171/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.80
+Model saved with validation loss: 0.0000 (normalized), 35.80 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:18<00:00,  6.60it/s]
+Epoch [172/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.50
+Epoch [172/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.86
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:19<00:00,  6.57it/s]
+Epoch [173/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.49
+Epoch [173/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.88
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:19<00:00,  6.53it/s]
+Epoch [174/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.50
+Epoch [174/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.82
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:18<00:00,  6.58it/s]
+Epoch [175/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.51
+Epoch [175/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.92
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:19<00:00,  6.56it/s]
+Epoch [176/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.45
+Epoch [176/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.79
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:19<00:00,  6.52it/s]
+Epoch [177/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.46
+Epoch [177/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.75
+Model saved with validation loss: 0.0000 (normalized), 35.75 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:19<00:00,  6.52it/s]
+Epoch [178/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.43
+Epoch [178/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.82
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:18<00:00,  6.59it/s]
+Epoch [179/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.44
+Epoch [179/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.62
+Model saved with validation loss: 0.0000 (normalized), 35.62 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:19<00:00,  6.52it/s]
+Epoch [180/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.40
+Epoch [180/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.62
+Model saved with validation loss: 0.0000 (normalized), 35.62 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:18<00:00,  6.64it/s]
+Epoch [181/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.43
+Epoch [181/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.61
+Model saved with validation loss: 0.0000 (normalized), 35.61 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.05it/s]
+Epoch [182/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.38
+Epoch [182/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.76
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.06it/s]
+Epoch [183/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.42
+Epoch [183/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.63
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.07it/s]
+Epoch [184/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.44
+Epoch [184/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.71
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.08it/s]
+Epoch [185/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.35
+Epoch [185/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.66
+Model saved with validation loss: 0.0000 (normalized), 35.66 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.03it/s]
+Epoch [186/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.38
+Epoch [186/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.66
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.06it/s]
+Epoch [187/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.32
+Epoch [187/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.62
+Model saved with validation loss: 0.0000 (normalized), 35.62 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.05it/s]
+Epoch [188/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.37
+Epoch [188/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.70
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.07it/s]
+Epoch [189/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.36
+Epoch [189/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.57
+Model saved with validation loss: 0.0000 (normalized), 35.57 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.06it/s]
+Epoch [190/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.28
+Epoch [190/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.65
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.07it/s]
+Epoch [191/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.29
+Epoch [191/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.52
+Model saved with validation loss: 0.0000 (normalized), 35.52 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.06it/s]
+Epoch [192/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.24
+Epoch [192/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.54
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.08it/s]
+Epoch [193/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.31
+Epoch [193/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.67
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.06it/s]
+Epoch [194/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.26
+Epoch [194/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.58
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.06it/s]
+Epoch [195/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.22
+Epoch [195/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.48
+Model saved with validation loss: 0.0000 (normalized), 35.48 (denormalized)
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.08it/s]
+Epoch [196/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.22
+Epoch [196/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.58
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.04it/s]
+Epoch [197/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.21
+Epoch [197/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.63
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.08it/s]
+Epoch [198/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.22
+Epoch [198/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.56
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.08it/s]
+Epoch [199/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.19
+Epoch [199/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.70
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 125/125 [00:17<00:00,  7.07it/s]
+Epoch [200/200], Training Loss (Normalized): 0.0000, Training Loss (Denormalized): 35.19
+Epoch [200/200], Validation Loss (Normalized): 0.0000, Validation Loss (Denormalized): 35.40
+Model saved with validation loss: 0.0000 (normalized), 35.40 (denormalized)
+Generating debug visualizations...
+Comparing with baseline after training...
+Post-training - Model ADE: 3340.36, Baseline ADE: 3.95
+Loaded model from epoch 200 with validation loss: 0.0000 (normalized), 35.40 (denormalized)
+Generating predictions...
+100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████| 33/33 [00:02<00:00, 13.73it/s]
+Creating submission...
+Prediction value ranges:
+X min: 1271.0639832779068, X max: 1363.8930559744524
+Y min: 469.4677227327327, Y max: 543.0894325398178
+Submission saved to enhanced_model_submission.csv
+Done!

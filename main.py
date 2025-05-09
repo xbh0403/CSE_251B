@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from data_utils.data_utils import TrajectoryDataset
 from models.model import GNNSequenceModel
-from models.train import train_model, debug_predictions
+from models.train import train_model, debug_predictions, pretrain_for_residuals
 from models.predict import generate_predictions, create_submission
 from models.metrics import compare_with_baseline
 from data_utils.feature_engineering import compute_constant_velocity
@@ -45,8 +45,8 @@ def main():
     print("Creating model...")
     model = GNNSequenceModel(
         node_dim=6,
-        gnn_hidden_dim=64,
-        seq_hidden_dim=128,
+        gnn_hidden_dim=128,
+        seq_hidden_dim=256,
         output_seq_len=60,
         output_dim=2,
         use_transformer=False,  # Set to False to use LSTM instead
@@ -65,6 +65,7 @@ def main():
     
     # Train model - pass the original dataset for denormalization
     print("Training model...")
+    model = pretrain_for_residuals(model, train_loader, num_epochs=5)
     model = train_model(model, train_loader, val_loader, full_train_dataset, full_train_dataset, num_epochs=200)
     
     # Debug predictions

@@ -53,7 +53,17 @@ class GNNSequenceModel(nn.Module):
         # Physics integration layers
         if use_physics:
             self.physics_projection = nn.Linear(output_seq_len * output_dim, seq_hidden_dim)
-            self.physics_weight = nn.Parameter(torch.tensor([0.3]), requires_grad=True)
+            
+            # Simple learnable parameter for residual weighting
+            self.physics_weight = nn.Parameter(torch.tensor([0.5]), requires_grad=True)
+            
+            # Agent-specific weighting network (properly defined in __init__)
+            self.agent_weight_network = nn.Sequential(
+                nn.Linear(agent_embedding_dim, 32),
+                nn.ReLU(),
+                nn.Linear(32, 1),
+                nn.Sigmoid()
+            )
     
     def forward(self, data):
         """
@@ -132,10 +142,33 @@ class GNNSequenceModel(nn.Module):
         neural_trajectory = self.trajectory_decoder(combined_features)
         
         if self.use_physics:
-            # Combine neural trajectory with constant velocity prediction
-            # The weight is a learnable parameter
-            weight = torch.sigmoid(self.physics_weight)  # Ensure weight is between 0 and 1
-            final_trajectory = weight * neural_trajectory + (1 - weight) * const_vel_pred
+            # Compute constant velocity baseline
+            const_vel_pred = compute_constant_velocity(data['history'])
+            
+            # Get trajectory from decoder
+            predicted_trajectory = self.trajectory_decoder(combined_features)
+            
+            # Calculate residuals
+            residuals = predicted_trajectory - const_vel_pred
+            
+            # Get agent types for focal agents
+            if 'agent_types' in data:
+                focal_agent_types = data['agent_types'][:, 0]  # Only focal agent
+            else:
+                focal_agent_types = torch.zeros(batch_size, dtype=torch.long, device=device)
+            
+            # Get embeddings for focal agents
+            focal_embeddings = self.agent_embedding(focal_agent_types)  # [batch_size, embedding_dim]
+            
+            # Use a simple adaptive weight approach
+            weight = torch.sigmoid(self.physics_weight)
+            weight = weight.view(1, 1, 1)  # Make it broadcastable with residuals shape
+            
+            # Apply weight to residuals
+            scaled_residuals = residuals * weight
+            
+            # Add scaled residuals to constant velocity
+            final_trajectory = const_vel_pred + scaled_residuals
             return final_trajectory
         else:
             return neural_trajectory

@@ -82,36 +82,32 @@ def process_batch_radius(batch_data, max_radius=50.0):
 
 def compute_constant_velocity(history_data):
     """
-    Compute constant velocity baseline predictions
-    
-    Args:
-        history_data: tensor of shape [batch_size, num_agents, seq_len, feature_dim]
-        
-    Returns:
-        predictions: tensor of shape [batch_size, output_seq_len=60, 2]
+    Compute constant velocity baseline using average velocity over the last 10 timesteps
     """
     batch_size, num_agents, seq_len, feat_dim = history_data.shape
     device = history_data.device
     
-    # Extract focal agent positions and velocities
+    # Extract focal agent positions
     focal_positions = history_data[:, 0, :, :2]  # [batch_size, seq_len, 2]
-    focal_velocities = history_data[:, 0, :, 2:4]  # [batch_size, seq_len, 2]
     
-    # Use the most recent velocity from history
-    last_velocity = focal_velocities[:, -1, :]  # [batch_size, 2]
+    # Use last 10 timesteps (or all available if less than 10)
+    last_n = min(10, seq_len-1)
+    
+    # Calculate velocity by position differences
+    velocity_diff = focal_positions[:, -last_n:, :] - focal_positions[:, -last_n-1:-1, :]  # [batch_size, last_n, 2]
+    
+    # Average velocity over these timesteps
+    avg_velocity = torch.mean(velocity_diff, dim=1)  # [batch_size, 2]
+    
+    # Last observed position
     last_position = focal_positions[:, -1, :]  # [batch_size, 2]
     
-    # Generate future positions using constant velocity
-    future_timesteps = 60  # Number of future timesteps to predict
-    time_delta = 0.1  # Assuming 10Hz sampling rate
-    
-    # Initialize predictions tensor
+    # Generate predictions
+    future_timesteps = 60
     predictions = torch.zeros((batch_size, future_timesteps, 2), device=device)
     
-    # Generate predictions
     for t in range(future_timesteps):
-        t_future = (t + 1) * time_delta  # Time from last observed position
-        predictions[:, t, :] = last_position + last_velocity * t_future
+        predictions[:, t, :] = last_position + (t+1) * avg_velocity
     
     return predictions
 
