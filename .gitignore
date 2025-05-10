@@ -4,6 +4,8 @@
 /main.ipynb
 /normalization_stats.npz
 /debug_visualizations
+/best_model.pth
+/lstm_submission.csv
 
 
 # Byte-compiled / optimized / DLL files

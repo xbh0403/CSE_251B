@@ -1,348 +1,127 @@
-import os
 import torch
 import torch.nn as nn
 from tqdm import tqdm
-from data_utils.feature_engineering import compute_constant_velocity
 
-# Add this to your training code before the main training loop
-def pretrain_for_residuals(model, train_loader, num_epochs=5):
-    """Pre-train model to predict zero residuals"""
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-    criterion = nn.MSELoss()
-    
-    for epoch in range(num_epochs):
-        model.train()
-        total_loss = 0.0
-        
-        for batch in train_loader:
-            if isinstance(batch, dict):
-                history = batch['history'].to(device)
-                future = batch['future'].to(device)
-            else:
-                history, future = batch
-                history = history.to(device)
-                future = future.to(device)
-            
-            # Get constant velocity predictions
-            const_vel_pred = compute_constant_velocity(history)
-            
-            # Target residuals should be zero
-            target_residuals = torch.zeros_like(const_vel_pred)
-            
-            # Forward pass
-            optimizer.zero_grad()
-            data = {'history': history}
-            predicted_residuals = model(data) - const_vel_pred  # Ensure we're training to predict zero residuals
-            
-            # Loss based on residual prediction
-            loss = criterion(predicted_residuals, target_residuals)
-            loss.backward()
-            optimizer.step()
-            
-            total_loss += loss.item()
-            
-        print(f'Pretraining Epoch [{epoch+1}/{num_epochs}], Loss: {total_loss/len(train_loader):.4f}')
-    
-    return model
-
-
-def train_model(model, train_loader, val_loader, train_original_dataset, val_original_dataset, num_epochs=30):
+def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_patience=10, 
+                lr=1e-3, weight_decay=1e-4, lr_step_size=20, lr_gamma=0.25):
     """
-    Train the model and track both normalized and denormalized MSE losses
+    Train the model with validation
     
     Args:
         model: The model to train
         train_loader: DataLoader for training data
         val_loader: DataLoader for validation data
-        train_original_dataset: Original TrajectoryDataset for denormalization (not Subset)
-        val_original_dataset: Original TrajectoryDataset for denormalization (not Subset)
-        num_epochs: Number of epochs to train
+        num_epochs: Maximum number of epochs to train
+        early_stopping_patience: Number of epochs to wait for improvement
+        lr: Initial learning rate
+        weight_decay: Weight decay for optimizer
+        lr_step_size: Epochs between learning rate reductions
+        lr_gamma: Factor to reduce learning rate
     """
     # Device configuration
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = model.to(device)
+    device = model.device if hasattr(model, 'device') else next(model.parameters()).device
     
     # Loss function and optimizer
     criterion = nn.MSELoss()
-    optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', factor=0.2, patience=3
-    )
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
     
     # Training loop
     best_val_loss = float('inf')
+    no_improvement = 0
     
-    # For logging
-    train_losses = {'normalized': [], 'denormalized': []}
-    val_losses = {'normalized': [], 'denormalized': []}
-    
-    for epoch in range(num_epochs):
+    progress_bar = tqdm(range(num_epochs), desc="Epoch", unit="epoch")
+    for epoch in progress_bar:
         # Training phase
         model.train()
-        train_loss_norm = 0.0
-        train_loss_denorm = 0.0
+        train_loss = 0.0
         
-        for batch_idx, batch in enumerate(tqdm(train_loader)):
-            # For Subset objects, the __getitem__ returns whatever the dataset returns
-            # Handle accordingly based on your TrajectoryDataset implementation
-            
-            # With Subset objects from random_split, the batch might look different
-            if isinstance(batch, dict):
-                history = batch['history'].to(device)
-                future = batch['future'].to(device)
-            else:
-                # If your batch is a tuple or different structure, handle it accordingly
-                # Example if your Subset returns (history, future):
-                history, future = batch
-                history = history.to(device)
-                future = future.to(device)
+        for batch in train_loader:
+            # Move data to device
+            for key in batch:
+                if isinstance(batch[key], torch.Tensor):
+                    batch[key] = batch[key].to(device)
             
             # Forward pass
             optimizer.zero_grad()
+            predictions = model(batch)
             
-            # Prepare input data dictionary
-            data = {'history': history}
+            # Calculate loss
+            loss = criterion(predictions, batch['future'])
             
-            # Calculate baseline predictions
-            baseline_pred = compute_constant_velocity(history)
-            
-            # Get model predictions (as residuals)
-            residuals = model(data)
-            
-            # Apply residuals to baseline
-            predictions = baseline_pred + residuals
-            
-            # Calculate loss against ground truth
-            loss_normalized = criterion(predictions, future)
-            
-            # Calculate denormalized loss (for information)
-            predictions_denorm = train_original_dataset.denormalize_positions(predictions)
-            future_denorm = train_original_dataset.denormalize_positions(future)
-            loss_denormalized = criterion(predictions_denorm, future_denorm)
-            
-            # Backward and optimize (using normalized loss)
-            loss_normalized.backward()
+            # Backward and optimize
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
             optimizer.step()
             
-            # Track both losses
-            train_loss_norm += loss_normalized.item()
-            train_loss_denorm += loss_denormalized.item()
-            
+            train_loss += loss.item()
         
-        # Calculate average training losses
-        avg_train_loss_norm = train_loss_norm / len(train_loader)
-        avg_train_loss_denorm = train_loss_denorm / len(train_loader)
-        
-        # Store for plotting
-        train_losses['normalized'].append(avg_train_loss_norm)
-        train_losses['denormalized'].append(avg_train_loss_denorm)
-        
-        print(f'Epoch [{epoch+1}/{num_epochs}], Training Loss (Normalized): {avg_train_loss_norm:.4f}, '
-              f'Training Loss (Denormalized): {avg_train_loss_denorm:.2f}')
+        # Calculate average training loss
+        train_loss /= len(train_loader)
         
         # Validation phase
         model.eval()
-        val_loss_norm = 0.0
-        val_loss_denorm = 0.0
+        val_loss = 0.0
+        val_mae = 0.0
+        val_mse = 0.0
         
         with torch.no_grad():
             for batch in val_loader:
-                # Handle different batch structures
-                if isinstance(batch, dict):
-                    history = batch['history'].to(device)
-                    future = batch['future'].to(device)
-                else:
-                    history, future = batch
-                    history = history.to(device)
-                    future = future.to(device)
+                # Move data to device
+                for key in batch:
+                    if isinstance(batch[key], torch.Tensor):
+                        batch[key] = batch[key].to(device)
                 
-                # Prepare input data dictionary
-                data = {'history': history}
-                
-                # Calculate baseline predictions
-                baseline_pred = compute_constant_velocity(history)
-                
-                # Get model predictions (as residuals)
-                residuals = model(data)
-                
-                # Apply residuals to baseline
-                predictions = baseline_pred + residuals
+                # Forward pass
+                predictions = model(batch)
                 
                 # Calculate normalized loss
-                loss_normalized = criterion(predictions, future)
-                val_loss_norm += loss_normalized.item()
+                val_loss += criterion(predictions, batch['future']).item()
                 
-                # Calculate denormalized loss
-                predictions_denorm = val_original_dataset.denormalize_positions(predictions)
-                future_denorm = val_original_dataset.denormalize_positions(future)
-                loss_denormalized = criterion(predictions_denorm, future_denorm)
-                val_loss_denorm += loss_denormalized.item()
+                # Calculate unnormalized metrics
+                pred_unnorm = predictions * batch['scale'].view(-1, 1, 1)
+                future_unnorm = batch['future'] * batch['scale'].view(-1, 1, 1)
+                
+                val_mae += nn.L1Loss()(pred_unnorm, future_unnorm).item()
+                val_mse += nn.MSELoss()(pred_unnorm, future_unnorm).item()
         
         # Calculate average validation losses
-        avg_val_loss_norm = val_loss_norm / len(val_loader)
-        avg_val_loss_denorm = val_loss_denorm / len(val_loader)
+        val_loss /= len(val_loader)
+        val_mae /= len(val_loader)
+        val_mse /= len(val_loader)
         
-        # Store for plotting
-        val_losses['normalized'].append(avg_val_loss_norm)
-        val_losses['denormalized'].append(avg_val_loss_denorm)
+        # Update learning rate
+        scheduler.step()
         
-        print(f'Epoch [{epoch+1}/{num_epochs}], Validation Loss (Normalized): {avg_val_loss_norm:.4f}, '
-              f'Validation Loss (Denormalized): {avg_val_loss_denorm:.2f}')
+        # Update progress bar with metrics
+        progress_bar.set_postfix({
+            'lr': f"{optimizer.param_groups[0]['lr']:.6f}",
+            'train_mse': f"{train_loss:.4f}",
+            'val_mse': f"{val_loss:.4f}",
+            'val_mae': f"{val_mae:.4f}",
+            'val_mse': f"{val_mse:.4f}"
+        })
         
-        # Learning rate scheduling (based on normalized validation loss)
-        scheduler.step(avg_val_loss_norm)
-        
-        # Save the best model (based on normalized validation loss)
-        os.makedirs('/tscc/nfs/home/bax001/scratch/CSE_251B/checkpoints', exist_ok=True)
-        if avg_val_loss_norm < best_val_loss:
-            best_val_loss = avg_val_loss_norm
+        # Save the best model
+        if val_loss < best_val_loss - 1e-3:
+            best_val_loss = val_loss
+            no_improvement = 0
             torch.save({
-                'epoch': epoch + 1,
+                'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                'norm_val_loss': avg_val_loss_norm,
-                'denorm_val_loss': avg_val_loss_denorm
-            }, '/tscc/nfs/home/bax001/scratch/CSE_251B/checkpoints/best_model.pth')
-            print(f'Model saved with validation loss: {avg_val_loss_norm:.4f} (normalized), '
-                  f'{avg_val_loss_denorm:.2f} (denormalized)')
-    
-    return model
-
-
-def debug_predictions(model, val_loader, val_dataset, num_examples=5):
-    """
-    Generate and visualize predictions vs ground truth for debugging
-    
-    Args:
-        model: Trained model
-        val_loader: DataLoader for validation data
-        val_dataset: Original validation dataset for denormalization
-        num_examples: Number of examples to visualize
-    """
-    import matplotlib.pyplot as plt
-    import numpy as np
-    from data_utils.feature_engineering import compute_constant_velocity
-    
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = model.to(device)
-    model.eval()
-    
-    # Create output directory for visualizations
-    os.makedirs('debug_visualizations', exist_ok=True)
-    
-    # Process a few batches for visualization
-    example_count = 0
-    
-    # Calculate error metrics
-    model_ade_sum = 0.0
-    baseline_ade_sum = 0.0
-    model_fde_sum = 0.0
-    baseline_fde_sum = 0.0
-    
-    with torch.no_grad():
-        for batch in val_loader:
-            # Handle different batch structures
-            if isinstance(batch, dict):
-                history = batch['history'].to(device)
-                future = batch['future'].to(device)
-            else:
-                history, future = batch
-                history = history.to(device)
-                future = future.to(device)
-            
-            # Prepare input data dictionary
-            data = {'history': history}
-            
-            # Get baseline predictions
-            baseline_pred = compute_constant_velocity(history)
-            
-            # Get model predictions
-            residuals = model(data)
-            model_pred = baseline_pred + residuals
-            
-            # Denormalize for visualization
-            history_denorm = val_dataset.denormalize_positions(history[:, 0, :, :2])
-            future_denorm = val_dataset.denormalize_positions(future)
-            model_pred_denorm = val_dataset.denormalize_positions(model_pred)
-            baseline_pred_denorm = val_dataset.denormalize_positions(baseline_pred)
-            
-            # Calculate ADE and FDE for this batch
-            for i in range(history.shape[0]):
-                # Calculate ADE (Average Displacement Error)
-                model_ade = torch.mean(torch.sqrt(torch.sum((model_pred_denorm[i] - future_denorm[i])**2, dim=1)))
-                baseline_ade = torch.mean(torch.sqrt(torch.sum((baseline_pred_denorm[i] - future_denorm[i])**2, dim=1)))
-                
-                # Calculate FDE (Final Displacement Error)
-                model_fde = torch.sqrt(torch.sum((model_pred_denorm[i, -1] - future_denorm[i, -1])**2))
-                baseline_fde = torch.sqrt(torch.sum((baseline_pred_denorm[i, -1] - future_denorm[i, -1])**2))
-                
-                model_ade_sum += model_ade.item()
-                baseline_ade_sum += baseline_ade.item()
-                model_fde_sum += model_fde.item()
-                baseline_fde_sum += baseline_fde.item()
-            
-            # Visualize a few examples
-            for i in range(min(history.shape[0], num_examples - example_count)):
-                plt.figure(figsize=(12, 8))
-                
-                # Extract the first agent's history (assuming history shape is [batch, agents, time, features])
-                # If history shape is different, adjust accordingly
-                if history_denorm.dim() > 3:  # If history includes multiple agents
-                    agent_history = history_denorm[i, 0, :, :2].cpu().numpy()
-                else:  # If history is just for one agent
-                    agent_history = history_denorm[i, :, :2].cpu().numpy()
-                
-                # Plot history
-                plt.plot(agent_history[:, 0], agent_history[:, 1], 'ko-', label='History', markersize=4)
-                
-                # Plot ground truth future
-                future_path = future_denorm[i, :, :2].cpu().numpy()
-                plt.plot(future_path[:, 0], future_path[:, 1], 'go-', label='Ground Truth', markersize=4)
-                
-                # Plot model prediction
-                model_path = model_pred_denorm[i, :, :2].cpu().numpy()
-                plt.plot(model_path[:, 0], model_path[:, 1], 'bo-', label='Model Prediction', markersize=4)
-                
-                # Plot baseline prediction
-                baseline_path = baseline_pred_denorm[i, :, :2].cpu().numpy()
-                plt.plot(baseline_path[:, 0], baseline_path[:, 1], 'ro-', label='Constant Velocity', markersize=4)
-                
-                # Calculate errors for this example
-                model_ade_i = np.mean(np.sqrt(np.sum((model_path - future_path)**2, axis=1)))
-                baseline_ade_i = np.mean(np.sqrt(np.sum((baseline_path - future_path)**2, axis=1)))
-                model_fde_i = np.sqrt(np.sum((model_path[-1] - future_path[-1])**2))
-                baseline_fde_i = np.sqrt(np.sum((baseline_path[-1] - future_path[-1])**2))
-                
-                plt.xlabel('X Position')
-                plt.ylabel('Y Position')
-                plt.title(f'Trajectory Example {example_count + 1}\n'
-                          f'Model ADE: {model_ade_i:.2f}, FDE: {model_fde_i:.2f}\n'
-                          f'Baseline ADE: {baseline_ade_i:.2f}, FDE: {baseline_fde_i:.2f}')
-                plt.legend()
-                plt.grid(True)
-                
-                # Add markers for start and end points
-                plt.scatter(agent_history[0, 0], agent_history[0, 1], c='k', s=100, marker='*', label='Start')
-                plt.scatter(future_path[-1, 0], future_path[-1, 1], c='g', s=100, marker='*', label='GT End')
-                plt.scatter(model_path[-1, 0], model_path[-1, 1], c='b', s=100, marker='*', label='Model End')
-                plt.scatter(baseline_path[-1, 0], baseline_path[-1, 1], c='r', s=100, marker='*', label='Baseline End')
-                
-                # Save with higher resolution
-                plt.savefig(f'debug_visualizations/trajectory_example_{example_count + 1}.png', dpi=300, bbox_inches='tight')
-                plt.close()
-                
-                example_count += 1
-            
-            if example_count >= num_examples:
+                'val_loss': val_loss,
+                'val_mae': val_mae,
+                'val_mse': val_mse
+            }, "best_model.pth")
+        else:
+            no_improvement += 1
+            if no_improvement >= early_stopping_patience:
+                progress_bar.write("Early stopping!")
                 break
     
-    # Print overall metrics
-    total_examples = min(example_count, num_examples)
-    if total_examples > 0:
-        print(f"\nOverall metrics for {total_examples} examples:")
-        print(f"Model ADE: {model_ade_sum/total_examples:.2f}, FDE: {model_fde_sum/total_examples:.2f}")
-        print(f"Baseline ADE: {baseline_ade_sum/total_examples:.2f}, FDE: {baseline_fde_sum/total_examples:.2f}")
-        print(f"Improvement: {((baseline_ade_sum - model_ade_sum)/baseline_ade_sum)*100:.2f}% in ADE, "
-              f"{((baseline_fde_sum - model_fde_sum)/baseline_fde_sum)*100:.2f}% in FDE")
+    # Load the best model
+    checkpoint = torch.load("best_model.pth")
+    model.load_state_dict(checkpoint['model_state_dict'])
+    
+    return model, checkpoint

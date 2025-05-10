@@ -3,63 +3,51 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-def generate_predictions(model, test_loader, test_dataset):
-    """Generate predictions for test data with denormalization"""
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = model.to(device)
+def generate_predictions(model, test_loader):
+    """Generate predictions for test data"""
+    device = next(model.parameters()).device
     model.eval()
     
     all_predictions = []
+    all_origins = []
     
     with torch.no_grad():
-        for batch in tqdm(test_loader):
-            # Handle different batch structures
-            if isinstance(batch, dict):
-                history = batch['history'].to(device)
-            else:
-                # If your Subset returns a different structure, handle accordingly
-                history = batch[0].to(device)  # Adjust as needed
+        for batch in tqdm(test_loader, desc="Generating predictions"):
+            # Move data to device
+            for key in batch:
+                if isinstance(batch[key], torch.Tensor):
+                    batch[key] = batch[key].to(device)
             
-            # Prepare input data dictionary
-            data = {'history': history}
+            # Get predictions (normalized)
+            predictions = model(batch)
             
-            # Calculate baseline predictions
-            from data_utils.feature_engineering import compute_constant_velocity
-            baseline_pred = compute_constant_velocity(history)
-            
-            # Get model predictions (as residuals)
-            residuals = model(data)
-            
-            # Apply residuals to baseline
-            predictions = baseline_pred + residuals
-            
-            # Denormalize predictions before saving
-            denormalized_predictions = test_dataset.denormalize_positions(predictions)
-            
-            # Move predictions back to CPU
-            denormalized_predictions = denormalized_predictions.cpu().numpy()
-            
-            # Collect predictions
-            all_predictions.append(denormalized_predictions)
+            # Store predictions and origin for later denormalization
+            all_predictions.append(predictions.cpu().numpy())
+            all_origins.append(batch['origin'].cpu().numpy())
     
-    # Concatenate all predictions
-    all_predictions = np.concatenate(all_predictions, axis=0)
+    # Concatenate all predictions and origins
+    predictions = np.concatenate(all_predictions, axis=0)
+    origins = np.concatenate(all_origins, axis=0)
     
-    return all_predictions
+    # Denormalize predictions - using a fixed scale for all predictions
+    # but individual origins for each trajectory
+    scale_factor = test_loader.dataset.dataset.scale if hasattr(test_loader.dataset, 'dataset') else 7.0
+    denormalized_predictions = predictions * scale_factor
+    
+    # Add origins - reshape origins to match predictions for broadcasting
+    origins = origins.reshape(-1, 1, 2)  # [batch_size, 1, 2]
+    denormalized_predictions = denormalized_predictions + origins
+    
+    return denormalized_predictions
 
 def create_submission(predictions, output_file='submission.csv'):
-    """Create submission file from predictions with value checks"""
+    """Create submission file from predictions"""
     # Check value ranges
     print(f"Prediction value ranges:")
     print(f"X min: {predictions[..., 0].min()}, X max: {predictions[..., 0].max()}")
     print(f"Y min: {predictions[..., 1].min()}, Y max: {predictions[..., 1].max()}")
     
-    # If these values are very small (like between -3 and 3), they're likely still normalized!
-    if abs(predictions[..., 0].max() - predictions[..., 0].min()) < 10:
-        print("WARNING: Predictions appear to still be normalized! Check denormalization.")
-    
-    # Reshape predictions to match the expected format
-    # From [batch_size, output_seq_len, 2] to [batch_size * output_seq_len, 2]
+    # Reshape predictions to match the expected format [batch_size * output_seq_len, 2]
     predictions_flat = predictions.reshape(-1, 2)
     
     # Create DataFrame

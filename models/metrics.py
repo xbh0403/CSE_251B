@@ -2,114 +2,80 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-def compute_metrics(predictions, ground_truth, test_dataset):
+def compute_metrics(predictions, ground_truth, scale_factor=None):
     """
-    Compute trajectory prediction metrics using denormalized values
+    Compute trajectory prediction metrics
     
     Args:
-        predictions: Normalized predicted trajectories [batch_size, seq_len, 2]
-        ground_truth: Normalized ground truth trajectories [batch_size, seq_len, 2]
-        test_dataset: Dataset object with denormalization method
+        predictions: Predicted trajectories [batch_size, seq_len, 2]
+        ground_truth: Ground truth trajectories [batch_size, seq_len, 2]
+        scale_factor: Optional scale factor for denormalization
         
     Returns:
         Dictionary of metrics
     """
-    # Denormalize both predictions and ground truth
-    predictions_denorm = test_dataset.denormalize_positions(predictions)
-    ground_truth_denorm = test_dataset.denormalize_positions(ground_truth)
+    # Apply scaling if provided
+    if scale_factor is not None:
+        if isinstance(predictions, torch.Tensor):
+            scale = torch.tensor(scale_factor, device=predictions.device)
+            predictions = predictions * scale.view(-1, 1, 1)
+            ground_truth = ground_truth * scale.view(-1, 1, 1)
+        else:
+            predictions = predictions * scale_factor
+            ground_truth = ground_truth * scale_factor
     
-    # Average Displacement Error (using denormalized values)
-    displacement_error = torch.norm(predictions_denorm - ground_truth_denorm, dim=2)
-    ade = displacement_error.mean().item()
-    
-    # Final Displacement Error (using denormalized values)
-    fde = displacement_error[:, -1].mean().item()
-    
-    # Timestep-wise ADE
-    timestep_ade = displacement_error.mean(dim=0)
+    # Calculate displacement error
+    if isinstance(predictions, torch.Tensor):
+        displacement_error = torch.norm(predictions - ground_truth, dim=2)
+        ade = displacement_error.mean().item()
+        fde = displacement_error[:, -1].mean().item()
+        timestep_ade = displacement_error.mean(dim=0).cpu().numpy()
+    else:
+        displacement_error = np.linalg.norm(predictions - ground_truth, axis=2)
+        ade = displacement_error.mean()
+        fde = displacement_error[:, -1].mean()
+        timestep_ade = displacement_error.mean(axis=0)
     
     return {
         'ADE': ade,
         'FDE': fde,
-        'timestep_ade': timestep_ade.detach().cpu().numpy()
+        'timestep_ade': timestep_ade
     }
 
-def compare_with_baseline(model, baseline_fn, val_loader, val_dataset):
+def visualize_predictions(history, predictions, ground_truth=None, num_examples=5):
     """
-    Compare model predictions with constant velocity baseline
+    Visualize trajectory predictions
     
     Args:
-        model: Trained model
-        baseline_fn: Function to compute baseline predictions
-        val_loader: DataLoader for validation data
-        val_dataset: Original validation dataset for denormalization
-        
-    Returns:
-        Dictionary of comparison metrics
+        history: Historical trajectories [batch_size, seq_len, 2]
+        predictions: Predicted trajectories [batch_size, seq_len, 2]
+        ground_truth: Optional ground truth trajectories [batch_size, seq_len, 2]
+        num_examples: Number of examples to visualize
     """
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = model.to(device)
-    model.eval()
+    # Select random examples if there are more than num_examples
+    batch_size = min(len(predictions), num_examples)
+    indices = np.random.choice(len(predictions), batch_size, replace=False)
     
-    model_metrics = {'ADE': [], 'FDE': [], 'timestep_ade': []}
-    baseline_metrics = {'ADE': [], 'FDE': [], 'timestep_ade': []}
-    
-    with torch.no_grad():
-        for batch in val_loader:
-            # Handle different batch structures
-            if isinstance(batch, dict):
-                history = batch['history'].to(device)
-                future = batch['future'].to(device)
-            else:
-                history, future = batch
-                history = history.to(device)
-                future = future.to(device)
-            
-            # Prepare input data dictionary
-            data = {'history': history}
-            
-            # Get model predictions
-            model_pred = model(data)
-            
-            # Get baseline predictions
-            baseline_pred = baseline_fn(history)
-            
-            # Compute metrics for model
-            model_batch_metrics = compute_metrics(model_pred, future, val_dataset)
-            
-            # Compute metrics for baseline
-            baseline_batch_metrics = compute_metrics(baseline_pred, future, val_dataset)
-            
-            # Store metrics
-            for key in ['ADE', 'FDE']:
-                model_metrics[key].append(model_batch_metrics[key])
-                baseline_metrics[key].append(baseline_batch_metrics[key])
-            
-            if len(model_metrics['timestep_ade']) == 0:
-                model_metrics['timestep_ade'] = model_batch_metrics['timestep_ade']
-                baseline_metrics['timestep_ade'] = baseline_batch_metrics['timestep_ade']
-            else:
-                model_metrics['timestep_ade'] = (model_metrics['timestep_ade'] + 
-                                               model_batch_metrics['timestep_ade']) / 2
-                baseline_metrics['timestep_ade'] = (baseline_metrics['timestep_ade'] + 
-                                                  baseline_batch_metrics['timestep_ade']) / 2
-    
-    # Compute average metrics
-    for key in ['ADE', 'FDE']:
-        model_metrics[key] = np.mean(model_metrics[key])
-        baseline_metrics[key] = np.mean(baseline_metrics[key])
-    
-    # Plot comparison
-    plt.figure(figsize=(10, 6))
-    plt.plot(model_metrics['timestep_ade'], label='Model')
-    plt.plot(baseline_metrics['timestep_ade'], label='Constant Velocity')
-    plt.xlabel('Future Timestep')
-    plt.ylabel('ADE')
-    plt.title('Model vs. Constant Velocity Baseline')
-    plt.legend()
-    plt.savefig('model_vs_baseline.png')
-    
-    return {
-        'model': model_metrics,
-        'baseline': baseline_metrics
-    }
+    for i, idx in enumerate(indices):
+        plt.figure(figsize=(10, 8))
+        
+        # Plot historical trajectory
+        hist = history[idx]
+        plt.plot(hist[:, 0], hist[:, 1], 'ko-', label='History')
+        
+        # Plot prediction
+        pred = predictions[idx]
+        plt.plot(pred[:, 0], pred[:, 1], 'bo-', label='Prediction')
+        
+        # Plot ground truth if available
+        if ground_truth is not None:
+            gt = ground_truth[idx]
+            plt.plot(gt[:, 0], gt[:, 1], 'go-', label='Ground Truth')
+        
+        plt.xlabel('X Position')
+        plt.ylabel('Y Position')
+        plt.title(f'Trajectory Example {i+1}')
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(f'trajectory_example_{i+1}.png')
+        plt.close()
