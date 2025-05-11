@@ -35,6 +35,7 @@ def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_
         # Training phase
         model.train()
         train_loss = 0.0
+        train_unnormalized_mse = 0.0
         
         for batch in train_loader:
             # Move data to device
@@ -49,6 +50,11 @@ def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_
             # Calculate loss
             loss = criterion(predictions, batch['future'])
             
+            # Calculate unnormalized MSE for training
+            pred_unnorm = predictions * batch['scale'].view(-1, 1, 1)
+            future_unnorm = batch['future'] * batch['scale'].view(-1, 1, 1)
+            train_unnormalized_mse += nn.MSELoss()(pred_unnorm, future_unnorm).item()
+            
             # Backward and optimize
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
@@ -58,6 +64,7 @@ def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_
         
         # Calculate average training loss
         train_loss /= len(train_loader)
+        train_unnormalized_mse /= len(train_loader)
         
         # Validation phase
         model.eval()
@@ -97,6 +104,7 @@ def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_
         progress_bar.set_postfix({
             'lr': f"{optimizer.param_groups[0]['lr']:.6f}",
             'train_mse': f"{train_loss:.4f}",
+            'train_unnorm_mse': f"{train_unnormalized_mse:.4f}",
             'val_mse': f"{val_loss:.4f}",
             'val_mae': f"{val_mae:.4f}",
             'val_mse': f"{val_mse:.4f}"
