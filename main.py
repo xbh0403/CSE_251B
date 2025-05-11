@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from torch.utils.data import DataLoader, random_split
 
-from data_utils.data_utils import TrajectoryDataset
+from data_utils.data_utils import ImprovedTrajectoryDataset
 from models.model import LSTMModel, GRUModel, TransformerModel
 from models.train import train_model
 from models.predict import generate_predictions, create_submission
@@ -18,15 +18,25 @@ def main():
     test_path = '/tscc/nfs/home/bax001/scratch/CSE_251B/data/test_input.npz'
     
     # Hyperparameters
-    scale = 7.0
     batch_size = 64
     hidden_dim = 128
     
     # Create the full dataset
-    print("Creating datasets...")
-    full_train_dataset = TrajectoryDataset(train_path, split='train', scale=scale, augment=True)
-    test_dataset = TrajectoryDataset(test_path, split='test', scale=scale)
-    
+    print("Creating datasets with optimized normalization...")
+    full_train_dataset = ImprovedTrajectoryDataset(
+        train_path, 
+        split='train', 
+        position_scale=5.0,  # From analysis
+        velocity_scale=20.0,    # From analysis
+        augment=True
+    )
+    test_dataset = ImprovedTrajectoryDataset(
+        test_path, 
+        split='test', 
+        position_scale=5.0,  # From analysis
+        velocity_scale=20.0     # From analysis
+    )
+
     # Create train/validation split
     dataset_size = len(full_train_dataset)
     train_size = int(0.9 * dataset_size)

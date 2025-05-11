@@ -3,13 +3,16 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+# In models/predict.py
+
 def generate_predictions(model, test_loader):
-    """Generate predictions for test data"""
+    """Generate predictions for test data with improved normalization"""
     device = next(model.parameters()).device
     model.eval()
     
     all_predictions = []
     all_origins = []
+    all_position_scales = []
     
     with torch.no_grad():
         for batch in tqdm(test_loader, desc="Generating predictions"):
@@ -21,20 +24,23 @@ def generate_predictions(model, test_loader):
             # Get predictions (normalized)
             predictions = model(batch)
             
-            # Store predictions and origin for later denormalization
+            # Store predictions and normalization factors
             all_predictions.append(predictions.cpu().numpy())
             all_origins.append(batch['origin'].cpu().numpy())
+            
+            # Store position scale for denormalization
+            all_position_scales.append(batch['position_scale'].cpu().numpy())
     
-    # Concatenate all predictions and origins
+    # Concatenate all predictions and metadata
     predictions = np.concatenate(all_predictions, axis=0)
     origins = np.concatenate(all_origins, axis=0)
+    position_scales = np.concatenate(all_position_scales, axis=0)
     
-    # Denormalize predictions - using a fixed scale for all predictions
-    # but individual origins for each trajectory
-    scale_factor = test_loader.dataset.dataset.scale if hasattr(test_loader.dataset, 'dataset') else 7.0
-    denormalized_predictions = predictions * scale_factor
+    # Denormalize predictions - using correct position scales
+    position_scales = position_scales.reshape(-1, 1, 1)  # [batch_size, 1, 1]
+    denormalized_predictions = predictions * position_scales
     
-    # Add origins - reshape origins to match predictions for broadcasting
+    # Add origins
     origins = origins.reshape(-1, 1, 2)  # [batch_size, 1, 2]
     denormalized_predictions = denormalized_predictions + origins
     

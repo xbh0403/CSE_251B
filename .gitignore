@@ -7,6 +7,8 @@
 /best_model.pth
 /lstm_submission.csv
 /improved_submission.csv
+/test_exploration
+/train_exploration
 
 
 # Byte-compiled / optimized / DLL files
