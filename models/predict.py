@@ -4,12 +4,13 @@ import pandas as pd
 from tqdm import tqdm
 
 def generate_predictions(model, test_loader):
-    """Generate predictions for test data"""
+    """Generate predictions for test data with improved normalization handling"""
     device = next(model.parameters()).device
     model.eval()
     
     all_predictions = []
     all_origins = []
+    all_scales = []
     
     with torch.no_grad():
         for batch in tqdm(test_loader, desc="Generating predictions"):
@@ -24,15 +25,17 @@ def generate_predictions(model, test_loader):
             # Store predictions and origin for later denormalization
             all_predictions.append(predictions.cpu().numpy())
             all_origins.append(batch['origin'].cpu().numpy())
+            all_scales.append(batch['scale'].cpu().numpy())
     
     # Concatenate all predictions and origins
     predictions = np.concatenate(all_predictions, axis=0)
     origins = np.concatenate(all_origins, axis=0)
+    scales = np.concatenate(all_scales, axis=0)
     
-    # Denormalize predictions - using a fixed scale for all predictions
-    # but individual origins for each trajectory
-    scale_factor = test_loader.dataset.dataset.scale if hasattr(test_loader.dataset, 'dataset') else 7.0
-    denormalized_predictions = predictions * scale_factor
+    # Denormalize predictions - using individual scales for each trajectory
+    # but converting to proper shape for broadcasting
+    scales = scales.reshape(-1, 1, 1)  # [batch_size, 1, 1]
+    denormalized_predictions = predictions * scales
     
     # Add origins - reshape origins to match predictions for broadcasting
     origins = origins.reshape(-1, 1, 2)  # [batch_size, 1, 2]
