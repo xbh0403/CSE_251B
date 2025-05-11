@@ -3,45 +3,32 @@ import numpy as np
 from torch.utils.data import DataLoader, random_split
 from sklearn.model_selection import train_test_split
 
+# Import your existing modules
 from data_utils.data_utils import TrajectoryDataset
-from models.model import LSTMModel
-from models.train import train_model
 from models.predict import generate_predictions, create_submission
 from models.metrics import compute_metrics, visualize_predictions
+
+# Import the PhysicsGuidedLSTM class - place it in models/model.py
+from models.model import PhysicsGuidedLSTM
 
 def main():
     # Set random seeds for reproducibility
     torch.manual_seed(42)
     np.random.seed(42)
     
-    # Data paths (update these to your actual paths)
+    # Data paths - use your existing paths
     train_path = '/tscc/nfs/home/bax001/scratch/CSE_251B/data/train.npz'
     test_path = '/tscc/nfs/home/bax001/scratch/CSE_251B/data/test_input.npz'
     
-    # Hyperparameters
-    position_scale = 7.0  # Maintain the scale that works well
-    velocity_scale = 5.0  # Separate scale for velocities
+    # Hyperparameters - keep your existing hyperparameters
+    scale = 7.0  # Using the scale that works well
     batch_size = 32
     hidden_dim = 128
-    robust_norm = True  # Enable robust normalization
     
-    # Create the full dataset
+    # Create datasets with your existing TrajectoryDataset class
     print("Creating datasets...")
-    full_train_dataset = TrajectoryDataset(
-        train_path, 
-        split='train', 
-        position_scale=position_scale,
-        velocity_scale=velocity_scale,
-        robust_norm=robust_norm,
-        augment=True
-    )
-    test_dataset = TrajectoryDataset(
-        test_path, 
-        split='test', 
-        position_scale=position_scale,
-        velocity_scale=velocity_scale,
-        robust_norm=robust_norm
-    )
+    full_train_dataset = TrajectoryDataset(train_path, split='train', scale=scale, augment=True)
+    test_dataset = TrajectoryDataset(test_path, split='test', scale=scale)
     
     # Create train/validation/test split (80%, 10%, 10%)
     dataset_size = len(full_train_dataset)
@@ -70,11 +57,22 @@ def main():
     test_from_train_loader = DataLoader(test_from_train_dataset, batch_size=batch_size, shuffle=False)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
     
-    # Create model with adjusted input dimension if needed
-    print("Creating model...")
-    input_dim = 6  # Default input dimension
+    # Check input dimensions from an actual batch
+    sample_batch = next(iter(train_loader))
+    history_shape = sample_batch['history'].shape
+    print(f"History shape: {history_shape}")
     
-    model = LSTMModel(
+    # Get input dimension for the model
+    if len(history_shape) == 4:  # [batch, num_agents, seq_len, feat_dim]
+        input_dim = history_shape[-1]
+    else:  # [batch, seq_len, feat_dim]
+        input_dim = history_shape[-1]
+    
+    print(f"Input dimension: {input_dim}")
+    
+    # Create the physics-guided LSTM model
+    print("Creating physics-guided model...")
+    model = PhysicsGuidedLSTM(
         input_dim=input_dim,
         hidden_dim=hidden_dim,
         output_seq_len=60,
@@ -82,27 +80,24 @@ def main():
     )
     
     # Set device for training
-    if torch.cuda.is_available():
-        device = torch.device('cuda')
-        print("Using CUDA")
-    else:
-        device = torch.device('cpu')
-        print("Using CPU")
-    
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"Using device: {device}")
     model = model.to(device)
     
-    # Train model with slightly adjusted parameters
-    print("Training model...")
+    # Train model using your existing train function
+    from models.train import train_model
+    
+    print("Training physics-guided model...")
     model, checkpoint = train_model(
         model=model,
         train_loader=train_loader,
         val_loader=val_loader,
-        num_epochs=100,
-        early_stopping_patience=15,  # Increase patience slightly
+        num_epochs=50,  # Reduced for initial testing
+        early_stopping_patience=10,
         lr=1e-3,
         weight_decay=1e-4,
-        lr_step_size=15,  # Adjust learning rate schedule
-        lr_gamma=0.5  # Less aggressive reduction
+        lr_step_size=15,
+        lr_gamma=0.5
     )
     
     print(f"Best model saved with validation metrics:")
@@ -155,12 +150,12 @@ def main():
         print(f"  MSE: {metrics['MSE']:.4f}")
     
     # Generate predictions for final test data
-    print("Generating predictions...")
+    print("Generating predictions for test data...")
     predictions = generate_predictions(model, test_loader)
     
     # Create submission file
     print("Creating submission...")
-    create_submission(predictions, output_file='improved_submission.csv')
+    create_submission(predictions, output_file='physics_lstm_basic_submission.csv')
     
     print("Done!")
 

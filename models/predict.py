@@ -1,10 +1,9 @@
 import torch
 import numpy as np
-import pandas as pd
 from tqdm import tqdm
 
 def generate_predictions(model, test_loader):
-    """Generate predictions for test data with improved normalization handling"""
+    """Generate predictions for test data"""
     device = next(model.parameters()).device
     model.eval()
     
@@ -25,7 +24,12 @@ def generate_predictions(model, test_loader):
             # Store predictions and origin for later denormalization
             all_predictions.append(predictions.cpu().numpy())
             all_origins.append(batch['origin'].cpu().numpy())
-            all_scales.append(batch['scale'].cpu().numpy())
+            
+            # Support both old and new dataset versions
+            if 'position_scale' in batch:
+                all_scales.append(batch['position_scale'].cpu().numpy())
+            else:
+                all_scales.append(batch['scale'].cpu().numpy())
     
     # Concatenate all predictions and origins
     predictions = np.concatenate(all_predictions, axis=0)
@@ -54,6 +58,7 @@ def create_submission(predictions, output_file='submission.csv'):
     predictions_flat = predictions.reshape(-1, 2)
     
     # Create DataFrame
+    import pandas as pd
     submission_df = pd.DataFrame(predictions_flat, columns=['x', 'y'])
     
     # Add index column
