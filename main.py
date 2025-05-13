@@ -1,9 +1,10 @@
 import torch
 import numpy as np
+import os
 from torch.utils.data import DataLoader, random_split
 
 from data_utils.data_utils import TrajectoryDataset
-from models.model import LSTMModel, GRUModel, TransformerModel
+from models.model import Seq2SeqLSTMModel, Seq2SeqGRUModel, Seq2SeqTransformerModel
 from models.train import train_model
 from models.predict import generate_predictions, create_submission
 from models.metrics import compute_metrics, visualize_predictions
@@ -14,13 +15,19 @@ def main():
     np.random.seed(42)
     
     # Data paths (update these to your actual paths)
-    train_path = '/tscc/nfs/home/bax001/scratch/CSE_251B/data/train.npz'
-    test_path = '/tscc/nfs/home/bax001/scratch/CSE_251B/data/test_input.npz'
+    if os.getcwd().startswith('/tscc'):
+        train_path = '/tscc/nfs/home/bax001/scratch/CSE_251B/data/train.npz'
+        test_path = '/tscc/nfs/home/bax001/scratch/CSE_251B/data/test_input.npz'
+    else:
+        train_path = 'data/train.npz'
+        test_path = 'data/test_input.npz'
     
     # Hyperparameters
     scale = 7.0
     batch_size = 64
     hidden_dim = 128
+    num_layers = 2
+    teacher_forcing_ratio = 0.5
     
     # Create the full dataset
     print("Creating datasets...")
@@ -42,13 +49,14 @@ def main():
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
     
-    # Create model
+    # Create model - choose from Seq2SeqLSTMModel, Seq2SeqGRUModel, or Seq2SeqTransformerModel
     print("Creating model...")
-    model = GRUModel(
+    model = Seq2SeqGRUModel(
         input_dim=6,
         hidden_dim=hidden_dim,
         output_seq_len=60,
-        output_dim=2
+        output_dim=2,
+        num_layers=num_layers
     )
     
     # Set device for training
@@ -72,7 +80,8 @@ def main():
         lr=1e-3,
         weight_decay=1e-4,
         lr_step_size=20,
-        lr_gamma=0.25
+        lr_gamma=0.25,
+        teacher_forcing_ratio=teacher_forcing_ratio
     )
     
     print(f"Best model saved with validation metrics:")
@@ -86,7 +95,7 @@ def main():
     
     # Create submission file
     print("Creating submission...")
-    create_submission(predictions, output_file='lstm_submission.csv')
+    create_submission(predictions, output_file='seq2seq_gru_submission.csv')
     
     print("Done!")
 

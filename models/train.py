@@ -3,7 +3,7 @@ import torch.nn as nn
 from tqdm import tqdm
 
 def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_patience=10, 
-                lr=1e-3, weight_decay=1e-4, lr_step_size=20, lr_gamma=0.25):
+                lr=1e-3, weight_decay=1e-4, lr_step_size=20, lr_gamma=0.25, teacher_forcing_ratio=0.5):
     """
     Train the model with validation
     
@@ -17,6 +17,7 @@ def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_
         weight_decay: Weight decay for optimizer
         lr_step_size: Epochs between learning rate reductions
         lr_gamma: Factor to reduce learning rate
+        teacher_forcing_ratio: Probability of using teacher forcing during training (0-1)
     """
     # Device configuration
     device = model.device if hasattr(model, 'device') else next(model.parameters()).device
@@ -43,9 +44,9 @@ def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_
                 if isinstance(batch[key], torch.Tensor):
                     batch[key] = batch[key].to(device)
             
-            # Forward pass
+            # Forward pass (with teacher forcing during training)
             optimizer.zero_grad()
-            predictions = model(batch)
+            predictions = model(batch, teacher_forcing_ratio=teacher_forcing_ratio)
             
             # Calculate loss
             loss = criterion(predictions, batch['future'])
@@ -79,8 +80,8 @@ def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_
                     if isinstance(batch[key], torch.Tensor):
                         batch[key] = batch[key].to(device)
                 
-                # Forward pass
-                predictions = model(batch)
+                # Forward pass (no teacher forcing during validation)
+                predictions = model(batch, teacher_forcing_ratio=0.0)
                 
                 # Calculate normalized loss
                 val_loss += criterion(predictions, batch['future']).item()
@@ -107,7 +108,7 @@ def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_
             'train_mse_unnorm': f"{train_mse_unnorm:.4f}",
             'val_mse': f"{val_loss:.4f}",
             'val_mae': f"{val_mae:.4f}",
-            'val_mse': f"{val_mse:.4f}"
+            'val_mse_unnorm': f"{val_mse:.4f}"
         })
         
         # Save the best model

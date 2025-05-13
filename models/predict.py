@@ -10,6 +10,7 @@ def generate_predictions(model, test_loader):
     
     all_predictions = []
     all_origins = []
+    all_histories = []  # Also store histories to get exact last positions
     
     with torch.no_grad():
         for batch in tqdm(test_loader, desc="Generating predictions"):
@@ -18,25 +19,36 @@ def generate_predictions(model, test_loader):
                 if isinstance(batch[key], torch.Tensor):
                     batch[key] = batch[key].to(device)
             
-            # Get predictions (normalized)
-            predictions = model(batch)
+            # Get predictions (normalized) - no teacher forcing for inference
+            predictions = model(batch, teacher_forcing_ratio=0.0)
             
-            # Store predictions and origin for later denormalization
+            # Store predictions, history, and origin for later processing
             all_predictions.append(predictions.cpu().numpy())
             all_origins.append(batch['origin'].cpu().numpy())
+            all_histories.append(batch['history'].cpu().numpy())
     
-    # Concatenate all predictions and origins
+    # Concatenate all data
     predictions = np.concatenate(all_predictions, axis=0)
     origins = np.concatenate(all_origins, axis=0)
+    histories = np.concatenate(all_histories, axis=0)
     
-    # Denormalize predictions - using a fixed scale for all predictions
-    # but individual origins for each trajectory
+    # Denormalize predictions
     scale_factor = test_loader.dataset.dataset.scale if hasattr(test_loader.dataset, 'dataset') else 7.0
     denormalized_predictions = predictions * scale_factor
     
     # Add origins - reshape origins to match predictions for broadcasting
     origins = origins.reshape(-1, 1, 2)  # [batch_size, 1, 2]
     denormalized_predictions = denormalized_predictions + origins
+    
+    # IMPORTANT FIX: Ensure the first prediction exactly matches the last history point
+    # Extract the last history point for each sample
+    last_history_points = histories[:, 0, -1, :2]  # [batch_size, 2]
+    
+    # Denormalize these points
+    denormalized_last_history = (last_history_points * scale_factor) + origins[:, 0, :]
+    
+    # Replace the first prediction with the exact last history point
+    denormalized_predictions[:, 0, :] = denormalized_last_history
     
     return denormalized_predictions
 
