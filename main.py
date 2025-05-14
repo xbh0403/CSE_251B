@@ -23,7 +23,9 @@ def main():
         test_path = 'data/test_input.npz'
     
     # Hyperparameters
-    scale = 7.0
+    scale_position = 15.0
+    scale_heading = 1.0
+    scale_velocity = 5.0
     batch_size = 64
     hidden_dim = 128
     num_layers = 2
@@ -31,23 +33,28 @@ def main():
     
     # Create the full dataset
     print("Creating datasets...")
-    full_train_dataset = TrajectoryDataset(train_path, split='train', scale=scale, augment=True)
-    test_dataset = TrajectoryDataset(test_path, split='test', scale=scale)
+    full_train_dataset = TrajectoryDataset(train_path, split='train', scale_position=scale_position, scale_heading=scale_heading, scale_velocity=scale_velocity, augment=True)
+    competition_test_dataset = TrajectoryDataset(test_path, split='test', scale_position=scale_position, scale_heading=scale_heading, scale_velocity=scale_velocity)
     
-    # Create train/validation split
+    # Create train/validation/test split with 70/15/15 ratio
     dataset_size = len(full_train_dataset)
-    train_size = int(0.9 * dataset_size)
-    val_size = dataset_size - train_size
+    train_size = int(0.7 * dataset_size)
+    val_size = int(0.15 * dataset_size)
+    test_size = dataset_size - train_size - val_size  # remaining 15%
     
-    train_dataset, val_dataset = random_split(
-        full_train_dataset, [train_size, val_size],
+    # Create the splits using random_split
+    train_dataset, val_dataset, internal_test_dataset = random_split(
+        full_train_dataset, [train_size, val_size, test_size],
         generator=torch.Generator().manual_seed(42)
     )
     
     # Create data loaders
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    internal_test_loader = DataLoader(internal_test_dataset, batch_size=batch_size, shuffle=False)
+    
+    # Also keep the original test loader for the competition's test data
+    competition_test_loader = DataLoader(competition_test_dataset, batch_size=batch_size, shuffle=False)
     
     # Create model - choose from Seq2SeqLSTMModel, Seq2SeqGRUModel, or Seq2SeqTransformerModel
     print("Creating model...")
@@ -89,13 +96,36 @@ def main():
     print(f"  MAE: {checkpoint['val_mae']:.4f}")
     print(f"  MSE: {checkpoint['val_mse']:.4f}")
     
-    # Generate predictions for test data
-    print("Generating predictions...")
-    predictions = generate_predictions(model, test_loader)
+    # Evaluate on internal test set
+    print("Evaluating on internal test set...")
+    internal_test_predictions = generate_predictions(model, internal_test_loader)
+    
+    # Calculate metrics on internal test set if ground truth is available
+    if hasattr(internal_test_dataset.dataset, 'future'):
+        internal_test_metrics = compute_metrics(
+            internal_test_predictions, 
+            internal_test_dataset.dataset.future,
+            scale_factor=internal_test_dataset.dataset.scale
+        )
+        print(f"Internal test metrics:")
+        print(f"  MAE: {internal_test_metrics['MAE']:.4f}")
+        print(f"  MSE: {internal_test_metrics['MSE']:.4f}")
+        
+        # Visualize some predictions from internal test set
+        visualize_predictions(
+            internal_test_dataset.dataset.history[:, 0, :, :2],
+            internal_test_predictions,
+            internal_test_dataset.dataset.future,
+            num_examples=5
+        )
+    
+    # Generate predictions for competition test data
+    print("Generating predictions for competition test data...")
+    competition_predictions = generate_predictions(model, competition_test_loader)
     
     # Create submission file
     print("Creating submission...")
-    create_submission(predictions, output_file='seq2seq_gru_submission.csv')
+    create_submission(competition_predictions, output_file='seq2seq_gru_submission.csv')
     
     print("Done!")
 

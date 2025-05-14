@@ -55,8 +55,8 @@ class Seq2SeqLSTMModel(nn.Module):
         _, hidden = self.encoder(ego_history)
         
         # Determine if we're in training or inference mode
-        use_teacher_forcing = 'future' in data and torch.rand(1).item() < teacher_forcing_ratio
-        
+        use_teacher_forcing = self.training and 'future' in data and torch.rand(1).item() < teacher_forcing_ratio
+
         # Initialize output container
         predictions = torch.zeros(batch_size, self.output_seq_len, self.output_dim, 
                                  device=history.device)
@@ -132,7 +132,7 @@ class Seq2SeqGRUModel(nn.Module):
         _, hidden = self.encoder(ego_history)
         
         # Determine if we're in training or inference mode
-        use_teacher_forcing = 'future' in data and torch.rand(1).item() < teacher_forcing_ratio
+        use_teacher_forcing = self.training and 'future' in data and torch.rand(1).item() < teacher_forcing_ratio
         
         # Initialize output container
         predictions = torch.zeros(batch_size, self.output_seq_len, self.output_dim, 
@@ -226,7 +226,7 @@ class Seq2SeqTransformerModel(nn.Module):
         memory = self.encoder(ego_history)
         
         # Determine if we're in training or inference mode
-        use_teacher_forcing = 'future' in data and torch.rand(1).item() < teacher_forcing_ratio
+        use_teacher_forcing = self.training and 'future' in data and torch.rand(1).item() < teacher_forcing_ratio
         
         # FIXED: Extract the last position from history (x,y coordinates)
         last_position = ego_history[:, -1:, :self.output_dim]

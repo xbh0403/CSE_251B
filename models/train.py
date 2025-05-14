@@ -52,8 +52,8 @@ def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_
             loss = criterion(predictions, batch['future'])
             
             # Calculate unnormalized training MSE
-            pred_unnorm = predictions * batch['scale'].view(-1, 1, 1)
-            future_unnorm = batch['future'] * batch['scale'].view(-1, 1, 1)
+            pred_unnorm = predictions * batch['scale_position'].view(-1, 1, 1)
+            future_unnorm = batch['future'] * batch['scale_position'].view(-1, 1, 1)
             train_mse_unnorm += nn.MSELoss()(pred_unnorm, future_unnorm).item()
             
             # Backward and optimize
@@ -87,8 +87,8 @@ def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_
                 val_loss += criterion(predictions, batch['future']).item()
                 
                 # Calculate unnormalized metrics
-                pred_unnorm = predictions * batch['scale'].view(-1, 1, 1)
-                future_unnorm = batch['future'] * batch['scale'].view(-1, 1, 1)
+                pred_unnorm = predictions * batch['scale_position'].view(-1, 1, 1)
+                future_unnorm = batch['future'] * batch['scale_position'].view(-1, 1, 1)
                 
                 val_mae += nn.L1Loss()(pred_unnorm, future_unnorm).item()
                 val_mse += nn.MSELoss()(pred_unnorm, future_unnorm).item()
