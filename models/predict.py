@@ -73,3 +73,70 @@ def create_submission(predictions, output_file='submission.csv'):
     # Save to CSV
     submission_df.to_csv(output_file)
     print(f'Submission saved to {output_file}')
+
+
+def generate_multimodal_predictions(model, test_loader):
+    """Generate predictions from a multi-modal model (using best confidence mode)"""
+    device = next(model.parameters()).device
+    model.eval()
+    
+    all_predictions = []
+    all_origins = []
+    all_histories = []
+    
+    with torch.no_grad():
+        for batch in tqdm(test_loader, desc="Generating predictions"):
+            # Move data to device
+            for key in batch:
+                if isinstance(batch[key], torch.Tensor):
+                    batch[key] = batch[key].to(device)
+            
+            # Get predictions (all modes)
+            if hasattr(model, 'num_modes'):
+                predictions, confidences = model(batch, teacher_forcing_ratio=0.0)
+                
+                # Get best mode for each sample based on confidence
+                best_modes = torch.argmax(confidences, dim=1)
+                
+                # Select best predictions
+                best_predictions = torch.gather(
+                    predictions, 
+                    dim=2, 
+                    index=best_modes.view(-1, 1, 1, 1).expand(-1, predictions.size(1), 1, predictions.size(-1))
+                ).squeeze(2)  # [batch_size, seq_len, output_dim]
+                
+                # Use these as our final predictions
+                predictions = best_predictions
+            else:
+                # For models without multi-modal support
+                predictions = model(batch, teacher_forcing_ratio=0.0)
+            
+            # Store predictions, history, and origin for later processing
+            all_predictions.append(predictions.cpu().numpy())
+            all_origins.append(batch['origin'].cpu().numpy())
+            all_histories.append(batch['history'].cpu().numpy())
+    
+    # Concatenate all data
+    predictions = np.concatenate(all_predictions, axis=0)
+    origins = np.concatenate(all_origins, axis=0)
+    histories = np.concatenate(all_histories, axis=0)
+    
+    # Denormalize predictions
+    scale_factor = test_loader.dataset.dataset.scale_position if hasattr(test_loader.dataset, 'dataset') else 15.0
+    denormalized_predictions = predictions * scale_factor
+    
+    # Add origins - reshape origins to match predictions for broadcasting
+    origins = origins.reshape(-1, 1, 2)  # [batch_size, 1, 2]
+    denormalized_predictions = denormalized_predictions + origins
+    
+    # IMPORTANT FIX: Ensure the first prediction exactly matches the last history point
+    # Extract the last history point for each sample
+    last_history_points = histories[:, 0, -1, :2]  # [batch_size, 2]
+    
+    # Denormalize these points
+    denormalized_last_history = (last_history_points * scale_factor) + origins[:, 0, :]
+    
+    # Replace the first prediction with the exact last history point
+    denormalized_predictions[:, 0, :] = denormalized_last_history
+    
+    return denormalized_predictions

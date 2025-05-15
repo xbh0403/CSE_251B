@@ -6,6 +6,7 @@ from .sequence_modules import (
     TransformerEncoder, TransformerDecoder
 )
 from .social_modules import SocialContextEncoder
+from .multimodal_modules import MultiModalGRUDecoder
 
 class Seq2SeqLSTMModel(nn.Module):
     """Sequence-to-sequence LSTM model for trajectory prediction"""
@@ -361,3 +362,135 @@ class SocialGRUModel(nn.Module):
                 decoder_input = output
         
         return predictions
+    
+
+class MultiModalGRUModel(nn.Module):
+    """
+    GRU-based model that predicts multiple possible future trajectories
+    """
+    
+    def __init__(self, input_dim=6, hidden_dim=128, output_seq_len=60, output_dim=2, 
+                 num_layers=2, num_modes=3):
+        super(MultiModalGRUModel, self).__init__()
+        
+        # Can optionally use the social encoder
+        self.use_social = True
+        
+        if self.use_social:
+            # Social context encoder
+            self.social_encoder = SocialContextEncoder(
+                input_dim=input_dim,
+                hidden_dim=hidden_dim,
+                num_heads=4
+            )
+            
+            # Temporal encoder processes social features
+            self.encoder = GRUEncoder(
+                input_dim=hidden_dim,
+                hidden_dim=hidden_dim,
+                num_layers=num_layers
+            )
+        else:
+            # Temporal encoder for ego agent only
+            self.encoder = GRUEncoder(
+                input_dim=input_dim,
+                hidden_dim=hidden_dim,
+                num_layers=num_layers
+            )
+        
+        # Multi-modal decoder
+        self.decoder = MultiModalGRUDecoder(
+            input_dim=output_dim,
+            hidden_dim=hidden_dim,
+            output_dim=output_dim,
+            num_layers=num_layers,
+            num_modes=num_modes
+        )
+        
+        # Parameters
+        self.output_seq_len = output_seq_len
+        self.output_dim = output_dim
+        self.hidden_dim = hidden_dim
+        self.num_modes = num_modes
+    
+    def forward(self, data, teacher_forcing_ratio=0.5, mode_idx=None):
+        """
+        Forward pass through the network
+        
+        Args:
+            data: Dictionary containing:
+                - history: Shape [batch_size, num_agents, seq_len, feature_dim]
+                - future: Shape [batch_size, output_seq_len, output_dim] (only in training)
+            teacher_forcing_ratio: Probability of using teacher forcing (0-1)
+            mode_idx: If provided, returns predictions only for this specific mode
+                
+        Returns:
+            During training: 
+                predictions: Shape [batch_size, output_seq_len, num_modes, output_dim]
+                confidences: Shape [batch_size, num_modes]
+            During inference with mode_idx:
+                predictions: Shape [batch_size, output_seq_len, output_dim]
+        """
+        # Extract history data
+        history = data['history']
+        batch_size = history.shape[0]
+        device = history.device
+        
+        # Process with encoder
+        if self.use_social:
+            # Process with social context encoder
+            social_features = self.social_encoder(history)  # [batch_size, seq_len, hidden_dim]
+            # Encode the trajectory with social context
+            _, hidden = self.encoder(social_features)
+        else:
+            # Extract ego agent only
+            ego_history = history[:, 0, :, :]
+            # Encode the history sequence
+            _, hidden = self.encoder(ego_history)
+        
+        # Determine if we're in training or inference mode
+        use_teacher_forcing = self.training and 'future' in data and torch.rand(1).item() < teacher_forcing_ratio
+        
+        # Initialize output containers
+        predictions = torch.zeros(batch_size, self.output_seq_len, self.num_modes, self.output_dim, 
+                                 device=device)
+        all_confidences = []
+        
+        # Initialize decoder input with the last position from history (x,y coordinates)
+        # FIXED: Proper tensor shape handling
+        decoder_input = history[:, 0, -1, :self.output_dim].unsqueeze(1)  # [batch_size, 1, output_dim]
+        
+        # Iteratively decode the sequence
+        for t in range(self.output_seq_len):
+            # Get multi-modal predictions for current timestep
+            output, confidences, hidden = self.decoder(decoder_input, hidden)
+            
+            # Store predictions and confidences
+            predictions[:, t:t+1, :, :] = output
+            if t == 0:  # Store confidence scores (same for all timesteps)
+                all_confidences = confidences
+            
+            # Update decoder input for next timestep
+            if use_teacher_forcing and t < self.output_seq_len - 1:
+                # Use ground truth as next input
+                decoder_input = data['future'][:, t:t+1, :]
+            else:
+                # Use highest confidence prediction as next input
+                if mode_idx is not None:
+                    # Use the specified mode
+                    decoder_input = output[:, :, mode_idx, :]
+                else:
+                    # Use highest confidence mode
+                    best_mode = torch.argmax(confidences, dim=1)
+                    decoder_input = torch.gather(
+                        output.squeeze(1),  # [batch_size, num_modes, output_dim]
+                        dim=1,
+                        index=best_mode.unsqueeze(-1).unsqueeze(-1).expand(-1, 1, self.output_dim)
+                    ).unsqueeze(1)  # Add back sequence dimension
+        
+        # If specific mode requested for inference, return just that mode
+        if mode_idx is not None:
+            return predictions[:, :, mode_idx, :]
+        
+        # For training, return all modes and confidences
+        return predictions, all_confidences
