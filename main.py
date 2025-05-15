@@ -2,12 +2,12 @@ import torch
 import numpy as np
 import os
 from torch.utils.data import DataLoader, random_split
+import torch.nn as nn
 
 from data_utils.data_utils import TrajectoryDataset
-from models.model import Seq2SeqLSTMModel, Seq2SeqGRUModel, Seq2SeqTransformerModel
+from models.model import Seq2SeqLSTMModel, Seq2SeqGRUModel, Seq2SeqTransformerModel, SocialGRUModel
 from models.train import train_model
 from models.predict import generate_predictions, create_submission
-from models.metrics import compute_metrics, visualize_predictions
 
 def main():
     # Set random seeds for reproducibility
@@ -56,9 +56,9 @@ def main():
     # Also keep the original test loader for the competition's test data
     competition_test_loader = DataLoader(competition_test_dataset, batch_size=batch_size, shuffle=False)
     
-    # Create model - choose from Seq2SeqLSTMModel, Seq2SeqGRUModel, or Seq2SeqTransformerModel
+    # Create model
     print("Creating model...")
-    model = Seq2SeqGRUModel(
+    model = SocialGRUModel(
         input_dim=6,
         hidden_dim=hidden_dim,
         output_seq_len=60,
@@ -96,28 +96,36 @@ def main():
     print(f"  MAE: {checkpoint['val_mae']:.4f}")
     print(f"  MSE: {checkpoint['val_mse']:.4f}")
     
-    # Evaluate on internal test set
+    # Evaluate on internal test set - directly calculating unnormalized MSE
     print("Evaluating on internal test set...")
-    internal_test_predictions = generate_predictions(model, internal_test_loader)
+    model.eval()
+    test_mae = 0.0
+    test_mse = 0.0
     
-    # Calculate metrics on internal test set if ground truth is available
-    if hasattr(internal_test_dataset.dataset, 'future'):
-        internal_test_metrics = compute_metrics(
-            internal_test_predictions, 
-            internal_test_dataset.dataset.future,
-            scale_factor=internal_test_dataset.dataset.scale
-        )
-        print(f"Internal test metrics:")
-        print(f"  MAE: {internal_test_metrics['MAE']:.4f}")
-        print(f"  MSE: {internal_test_metrics['MSE']:.4f}")
-        
-        # Visualize some predictions from internal test set
-        visualize_predictions(
-            internal_test_dataset.dataset.history[:, 0, :, :2],
-            internal_test_predictions,
-            internal_test_dataset.dataset.future,
-            num_examples=5
-        )
+    with torch.no_grad():
+        for batch in internal_test_loader:
+            # Move data to device
+            for key in batch:
+                if isinstance(batch[key], torch.Tensor):
+                    batch[key] = batch[key].to(device)
+            
+            # Forward pass (no teacher forcing during evaluation)
+            predictions = model(batch, teacher_forcing_ratio=0.0)
+            
+            # Calculate unnormalized metrics
+            pred_unnorm = predictions * batch['scale_position'].view(-1, 1, 1)
+            future_unnorm = batch['future'] * batch['scale_position'].view(-1, 1, 1)
+            
+            test_mae += nn.L1Loss()(pred_unnorm, future_unnorm).item()
+            test_mse += nn.MSELoss()(pred_unnorm, future_unnorm).item()
+    
+    # Calculate average test metrics
+    test_mae /= len(internal_test_loader)
+    test_mse /= len(internal_test_loader)
+    
+    print(f"Internal test metrics:")
+    print(f"  MAE: {test_mae:.4f}")
+    print(f"  MSE: {test_mse:.4f}")
     
     # Generate predictions for competition test data
     print("Generating predictions for competition test data...")

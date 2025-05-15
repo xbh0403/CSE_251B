@@ -33,8 +33,10 @@ def generate_predictions(model, test_loader):
     histories = np.concatenate(all_histories, axis=0)
     
     # Denormalize predictions
-    scale_factor = test_loader.dataset.dataset.scale if hasattr(test_loader.dataset, 'dataset') else 7.0
-    denormalized_predictions = predictions * scale_factor
+    scale_factor_position = test_loader.dataset.dataset.scale_position if hasattr(test_loader.dataset, 'dataset') else 15.0
+    scale_factor_velocity = test_loader.dataset.dataset.scale_velocity if hasattr(test_loader.dataset, 'dataset') else 5.0
+    scale_factor_heading = test_loader.dataset.dataset.scale_heading if hasattr(test_loader.dataset, 'dataset') else 1.0
+    denormalized_predictions = predictions * scale_factor_position
     
     # Add origins - reshape origins to match predictions for broadcasting
     origins = origins.reshape(-1, 1, 2)  # [batch_size, 1, 2]
@@ -45,7 +47,7 @@ def generate_predictions(model, test_loader):
     last_history_points = histories[:, 0, -1, :2]  # [batch_size, 2]
     
     # Denormalize these points
-    denormalized_last_history = (last_history_points * scale_factor) + origins[:, 0, :]
+    denormalized_last_history = (last_history_points * scale_factor_position) + origins[:, 0, :]
     
     # Replace the first prediction with the exact last history point
     denormalized_predictions[:, 0, :] = denormalized_last_history

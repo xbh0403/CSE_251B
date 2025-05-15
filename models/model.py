@@ -5,6 +5,7 @@ from .sequence_modules import (
     LSTMEncoder, LSTMDecoder, GRUEncoder, GRUDecoder, 
     TransformerEncoder, TransformerDecoder
 )
+from .social_modules import SocialContextEncoder
 
 class Seq2SeqLSTMModel(nn.Module):
     """Sequence-to-sequence LSTM model for trajectory prediction"""
@@ -270,5 +271,93 @@ class Seq2SeqTransformerModel(nn.Module):
                 if t < self.output_seq_len - 1:
                     # Append current prediction to the sequence
                     tgt_input = torch.cat([tgt_input, output[:, -1:, :]], dim=1)
+        
+        return predictions
+    
+
+class SocialGRUModel(nn.Module):
+    """
+    GRU-based model that incorporates social context for trajectory prediction
+    """
+    
+    def __init__(self, input_dim=6, hidden_dim=128, output_seq_len=60, output_dim=2, num_layers=2):
+        super(SocialGRUModel, self).__init__()
+        
+        # Social context encoder
+        self.social_encoder = SocialContextEncoder(
+            input_dim=input_dim,
+            hidden_dim=hidden_dim,
+            num_heads=4
+        )
+        
+        # Temporal encoder for processed trajectories
+        self.encoder = GRUEncoder(
+            input_dim=hidden_dim,  # Takes output from social encoder
+            hidden_dim=hidden_dim,
+            num_layers=num_layers
+        )
+        
+        # Trajectory decoder
+        self.decoder = GRUDecoder(
+            input_dim=output_dim,
+            hidden_dim=hidden_dim,
+            output_dim=output_dim,
+            num_layers=num_layers
+        )
+        
+        # Parameters
+        self.output_seq_len = output_seq_len
+        self.output_dim = output_dim
+        self.hidden_dim = hidden_dim
+    
+    def forward(self, data, teacher_forcing_ratio=0.5):
+        """
+        Forward pass through the network
+        
+        Args:
+            data: Dictionary containing:
+                - history: Shape [batch_size, num_agents, seq_len, feature_dim]
+                - future: Shape [batch_size, output_seq_len, output_dim] (only in training)
+            teacher_forcing_ratio: Probability of using teacher forcing (0-1)
+                
+        Returns:
+            Predicted trajectories: Shape [batch_size, output_seq_len, output_dim]
+        """
+        # Extract history data
+        history = data['history']
+        batch_size = history.shape[0]
+        device = history.device
+        
+        # Process with social context encoder
+        social_features = self.social_encoder(history)  # [batch_size, seq_len, hidden_dim]
+        
+        # Encode the trajectory with social context
+        _, hidden = self.encoder(social_features)
+        
+        # Determine if we're in training or inference mode
+        use_teacher_forcing = self.training and 'future' in data and torch.rand(1).item() < teacher_forcing_ratio
+        
+        # Initialize output container
+        predictions = torch.zeros(batch_size, self.output_seq_len, self.output_dim, 
+                                 device=device)
+        
+        # Initialize decoder input with the last position from history (x,y coordinates)
+        decoder_input = history[:, 0, -1:, :self.output_dim]
+        
+        # Iteratively decode the sequence
+        for t in range(self.output_seq_len):
+            # Get prediction for current timestep
+            output, hidden = self.decoder(decoder_input, hidden)
+            
+            # Store prediction
+            predictions[:, t:t+1, :] = output
+            
+            # Update decoder input for next timestep
+            if use_teacher_forcing and t < self.output_seq_len - 1:
+                # Use ground truth as next input
+                decoder_input = data['future'][:, t:t+1, :]
+            else:
+                # Use current prediction as next input
+                decoder_input = output
         
         return predictions
