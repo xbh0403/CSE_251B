@@ -135,11 +135,67 @@ def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_
     
     return model, checkpoint
 
+def physics_constraint_loss(predictions, dt=0.1, scale_factor=15.0):
+    """
+    Add physics-based constraints to ensure realistic trajectories
+    
+    Args:
+        predictions: Trajectory predictions [batch_size, seq_len, output_dim]
+        dt: Time step between predictions (in seconds)
+        scale_factor: Scale factor to convert normalized coordinates to real-world units
+        
+    Returns:
+        Combined physics loss term
+    """
+    # Convert to real-world scale for physics calculations (if predictions are normalized)
+    # If predictions are already in real-world scale, you can omit this step
+    predictions_real = predictions * scale_factor
+    
+    # Calculate velocities between consecutive points (m/s)
+    velocities = (predictions_real[:, 1:] - predictions_real[:, :-1]) / dt
+    
+    # Calculate accelerations (m/s²)
+    accelerations = (velocities[:, 1:] - velocities[:, :-1]) / dt
+    
+    # Calculate jerk (rate of change of acceleration) (m/s³)
+    jerk = (accelerations[:, 1:] - accelerations[:, :-1]) / dt
+    
+    # Physics constraints with reasonable thresholds for vehicles
+    
+    # 1. Max acceleration penalty (most vehicles can't exceed ~4 m/s²)
+    max_acc = 4.0  # m/s²
+    acc_magnitude = torch.norm(accelerations, dim=2)  # Calculate magnitude of acceleration vectors
+    acc_penalty = torch.mean(torch.relu(acc_magnitude - max_acc))
+    
+    # 2. Max velocity penalty (speed limit ~30 m/s or ~110 km/h)
+    max_vel = 30.0  # m/s
+    vel_magnitude = torch.norm(velocities, dim=2)  # Calculate magnitude of velocity vectors
+    vel_penalty = torch.mean(torch.relu(vel_magnitude - max_vel))
+    
+    # 3. Jerk minimization for smooth trajectories
+    jerk_magnitude = torch.norm(jerk, dim=2)
+    jerk_penalty = torch.mean(jerk_magnitude)
+    
+    # 4. Direction consistency (penalize abrupt direction changes)
+    # Get normalized velocity vectors
+    vel_norm = torch.norm(velocities, dim=2, keepdim=True) + 1e-8  # Avoid division by zero
+    vel_unit = velocities / vel_norm
+    # Calculate cosine similarity between consecutive velocity vectors (1 = same direction, -1 = opposite)
+    vel_cos_sim = torch.sum(vel_unit[:, :-1] * vel_unit[:, 1:], dim=2)
+    # Penalize when directions differ significantly (cos_sim < 0.7 is about 45 degrees)
+    direction_penalty = torch.mean(torch.relu(0.7 - vel_cos_sim))
+    
+    # Combined physics loss with weights for each component
+    return (0.1 * acc_penalty + 
+            0.05 * vel_penalty + 
+            0.01 * jerk_penalty + 
+            0.1 * direction_penalty)
 
 def train_multimodal_model(model, train_loader, val_loader, num_epochs=100, early_stopping_patience=10, 
-                lr=1e-3, weight_decay=1e-4, lr_step_size=20, lr_gamma=0.25, teacher_forcing_ratio=0.5):
+                lr=1e-3, weight_decay=1e-4, lr_step_size=20, lr_gamma=0.25, teacher_forcing_ratio=0.5,
+                physics_weight=0.2):  # Added physics weight parameter
     """
-    Train a multi-modal trajectory prediction model
+    Train a multi-modal trajectory prediction model with physics constraints
     """
     # Device configuration
     device = model.device if hasattr(model, 'device') else next(model.parameters()).device
@@ -158,6 +214,7 @@ def train_multimodal_model(model, train_loader, val_loader, num_epochs=100, earl
         model.train()
         train_loss = 0.0
         train_mse_unnorm = 0.0
+        train_physics_loss = 0.0  # Track physics loss separately
         
         for batch in train_loader:
             # Move data to device
@@ -180,27 +237,31 @@ def train_multimodal_model(model, train_loader, val_loader, num_epochs=100, earl
             weighted_mse = per_mode_mse * confidences
             
             # Sum across modes
-            loss = torch.mean(torch.sum(weighted_mse, dim=1))
+            pred_loss = torch.mean(torch.sum(weighted_mse, dim=1))
             
             # Calculate minimum MSE across all modes (best mode)
             min_mode_mse = torch.min(per_mode_mse, dim=1)[0]  # Get the best mode's error
             best_mode_loss = torch.mean(min_mode_mse)
             
-            # Combined loss: weighted MSE + best mode MSE
-            combined_loss = loss + best_mode_loss
-            
-            # Calculate unnormalized best mode MSE for metrics
-            # Get best mode index for each batch item
+            # Get best mode predictions for physics loss calculation
             best_modes = torch.argmin(per_mode_mse, dim=1)
-            
-            # Select best predictions
             best_predictions = torch.gather(
                 predictions, 
                 dim=2, 
                 index=best_modes.view(-1, 1, 1, 1).expand(-1, predictions.size(1), 1, predictions.size(-1))
             ).squeeze(2)  # [batch_size, seq_len, output_dim]
             
-            # Calculate unnormalized MSE
+            # Physics constraints loss
+            physics_loss = physics_constraint_loss(
+                best_predictions, 
+                dt=0.1,  # 10 Hz data = 0.1s between frames
+                scale_factor=batch['scale_position'][0].item()  # Use the scale factor
+            )
+            
+            # Combined loss: prediction loss + physics loss
+            combined_loss = pred_loss + best_mode_loss + physics_weight * physics_loss
+            
+            # Calculate unnormalized best mode MSE for metrics
             pred_unnorm = best_predictions * batch['scale_position'].view(-1, 1, 1)
             future_unnorm = batch['future'] * batch['scale_position'].view(-1, 1, 1)
             train_mse_unnorm += nn.MSELoss()(pred_unnorm, future_unnorm).item()
@@ -210,17 +271,21 @@ def train_multimodal_model(model, train_loader, val_loader, num_epochs=100, earl
             torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
             optimizer.step()
             
+            # Track losses
             train_loss += combined_loss.item()
+            train_physics_loss += physics_loss.item()
         
         # Calculate average training loss
         train_loss /= len(train_loader)
         train_mse_unnorm /= len(train_loader)
+        train_physics_loss /= len(train_loader)
         
         # Validation phase
         model.eval()
         val_loss = 0.0
         val_mae = 0.0
         val_mse = 0.0
+        val_physics_loss = 0.0  # Track validation physics loss
         
         with torch.no_grad():
             for batch in val_loader:
@@ -246,6 +311,14 @@ def train_multimodal_model(model, train_loader, val_loader, num_epochs=100, earl
                     index=best_modes.view(-1, 1, 1, 1).expand(-1, predictions.size(1), 1, predictions.size(-1))
                 ).squeeze(2)
                 
+                # Calculate physics loss for validation
+                physics_loss = physics_constraint_loss(
+                    best_predictions, 
+                    dt=0.1,
+                    scale_factor=batch['scale_position'][0].item()
+                )
+                val_physics_loss += physics_loss.item()
+                
                 # Calculate normalized best mode loss
                 val_loss += nn.MSELoss()(best_predictions, batch['future']).item()
                 
@@ -260,6 +333,7 @@ def train_multimodal_model(model, train_loader, val_loader, num_epochs=100, earl
         val_loss /= len(val_loader)
         val_mae /= len(val_loader)
         val_mse /= len(val_loader)
+        val_physics_loss /= len(val_loader)
         
         # Update learning rate
         scheduler.step()
@@ -268,10 +342,12 @@ def train_multimodal_model(model, train_loader, val_loader, num_epochs=100, earl
         progress_bar.set_postfix({
             'lr': f"{optimizer.param_groups[0]['lr']:.6f}",
             'train_loss': f"{train_loss:.4f}",
+            'train_phys': f"{train_physics_loss:.4f}",
             'train_mse_unnorm': f"{train_mse_unnorm:.4f}",
-            'val_mse': f"{val_loss:.4f}",
+            'val_loss': f"{val_loss:.4f}",
+            'val_mse': f"{val_mse:.4f}",
             'val_mae': f"{val_mae:.4f}",
-            'val_mse_unnorm': f"{val_mse:.4f}"
+            'val_phys': f"{val_physics_loss:.4f}"
         })
         
         # Save the best model
@@ -284,7 +360,8 @@ def train_multimodal_model(model, train_loader, val_loader, num_epochs=100, earl
                 'optimizer_state_dict': optimizer.state_dict(),
                 'val_loss': val_loss,
                 'val_mae': val_mae,
-                'val_mse': val_mse
+                'val_mse': val_mse,
+                'val_physics_loss': val_physics_loss
             }, "best_model.pth")
         else:
             no_improvement += 1

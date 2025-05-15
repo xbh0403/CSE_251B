@@ -82,6 +82,7 @@ def main():
     
     # Train model with the multi-modal training function
     print("Training model...")
+    # In main.py, add physics_weight parameter to the train_multimodal_model call
     model, checkpoint = train_multimodal_model(
         model=model,
         train_loader=train_loader,
@@ -92,7 +93,8 @@ def main():
         weight_decay=1e-4,
         lr_step_size=20,
         lr_gamma=0.25,
-        teacher_forcing_ratio=teacher_forcing_ratio
+        teacher_forcing_ratio=teacher_forcing_ratio,
+        physics_weight=0.2  # Control the influence of physics constraints
     )
     
     print(f"Best model saved with validation metrics:")
