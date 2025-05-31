@@ -19,7 +19,10 @@ def generate_predictions(model, test_loader):
                     batch[key] = batch[key].to(device)
             
             # Get predictions (normalized)
-            predictions = model(batch)
+            # Extract ego agent history from batch data
+            history = batch['history']
+            ego_history = history[:, 0, :, :]  # [batch_size, seq_len, feature_dim]
+            predictions = model(ego_history)
             
             # Store predictions and origin for later denormalization
             all_predictions.append(predictions.cpu().numpy())

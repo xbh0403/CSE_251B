@@ -1,39 +1,35 @@
 import torch
 import torch.nn as nn
-from .sequence_modules import LSTMEncoder
 
-class LSTMModel(nn.Module):
-    """LSTM model for trajectory prediction"""
+class LSTMEncoder(nn.Module):
+    """Simple LSTM for encoding temporal patterns"""
     
-    def __init__(self, input_dim=6, hidden_dim=128, output_seq_len=60, output_dim=2):
-        super(LSTMModel, self).__init__()
+    def __init__(self, input_dim=6, hidden_dim=128, output_dim=60*2):
+        super(LSTMEncoder, self).__init__()
         
-        # LSTM Encoder
-        self.lstm_encoder = LSTMEncoder(
-            input_dim=input_dim,
-            hidden_dim=hidden_dim,
-            output_dim=output_seq_len * output_dim
+        # LSTM layer
+        self.lstm = nn.LSTM(
+            input_size=input_dim,
+            hidden_size=hidden_dim,
+            batch_first=True
         )
+        
+        # Output projection
+        self.fc = nn.Linear(hidden_dim, output_dim)
     
-    def forward(self, data):
-        """
-        Forward pass through the network
+    def forward(self, x):
+        # x shape: [batch_size, seq_len, input_dim]
         
-        Args:
-            data: Dictionary containing:
-                - history: Shape [batch_size, num_agents, seq_len, feature_dim]
-                
-        Returns:
-            Predicted trajectories: Shape [batch_size, output_seq_len, output_dim]
-        """
-        # Extract history data
-        history = data['history']
-        batch_size, num_agents, seq_len, feat_dim = history.shape
+        # Apply LSTM
+        lstm_out, _ = self.lstm(x)
         
-        # Extract ego agent only
-        ego_history = history[:, 0, :, :]
+        # Use the final timestep for prediction
+        final_hidden = lstm_out[:, -1, :]
         
-        # Apply LSTM encoder
-        predictions = self.lstm_encoder(ego_history)
+        # Project to output dimension
+        output = self.fc(final_hidden)
         
-        return predictions
+        # Reshape to trajectory format [batch_size, output_seq_len, 2]
+        output = output.view(-1, 60, 2)
+        
+        return output

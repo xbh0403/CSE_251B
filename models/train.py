@@ -45,7 +45,10 @@ def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_
             
             # Forward pass
             optimizer.zero_grad()
-            predictions = model(batch)
+            # Extract ego agent history from batch data
+            history = batch['history']
+            ego_history = history[:, 0, :, :]  # [batch_size, seq_len, feature_dim]
+            predictions = model(ego_history)
             
             # Calculate loss (normalized for backprop)
             loss = criterion(predictions, batch['future'])
@@ -81,7 +84,10 @@ def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_
                         batch[key] = batch[key].to(device)
                 
                 # Forward pass
-                predictions = model(batch)
+                # Extract ego agent history from batch data
+                history = batch['history']
+                ego_history = history[:, 0, :, :]  # [batch_size, seq_len, feature_dim]
+                predictions = model(ego_history)
                 
                 # Calculate normalized loss
                 val_loss += criterion(predictions, batch['future']).item()
