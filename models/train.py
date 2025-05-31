@@ -35,6 +35,7 @@ def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_
         # Training phase
         model.train()
         train_loss = 0.0
+        train_mse_unnorm = 0.0
         
         for batch in train_loader:
             # Move data to device
@@ -46,8 +47,13 @@ def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_
             optimizer.zero_grad()
             predictions = model(batch)
             
-            # Calculate loss
+            # Calculate loss (normalized for backprop)
             loss = criterion(predictions, batch['future'])
+            
+            # Calculate unnormalized MSE for reporting
+            pred_unnorm = predictions * batch['scale'].view(-1, 1, 1)
+            future_unnorm = batch['future'] * batch['scale'].view(-1, 1, 1)
+            unnorm_mse = nn.MSELoss()(pred_unnorm, future_unnorm)
             
             # Backward and optimize
             loss.backward()
@@ -55,9 +61,11 @@ def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_
             optimizer.step()
             
             train_loss += loss.item()
+            train_mse_unnorm += unnorm_mse.item()
         
-        # Calculate average training loss
+        # Calculate average training losses
         train_loss /= len(train_loader)
+        train_mse_unnorm /= len(train_loader)
         
         # Validation phase
         model.eval()
@@ -96,9 +104,7 @@ def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_
         # Update progress bar with metrics
         progress_bar.set_postfix({
             'lr': f"{optimizer.param_groups[0]['lr']:.6f}",
-            'train_mse': f"{train_loss:.4f}",
-            'val_mse': f"{val_loss:.4f}",
-            'val_mae': f"{val_mae:.4f}",
+            'train_mse': f"{train_mse_unnorm:.4f}",
             'val_mse': f"{val_mse:.4f}"
         })
         
