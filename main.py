@@ -7,11 +7,15 @@ from torch.utils.data import DataLoader, random_split
 import torch.nn as nn
 import matplotlib.pyplot as plt
 
-from data_utils.data_utils import TrajectoryDataset
+from data_utils.data_utils_new import TrajectoryDataset
 from models.model import Seq2SeqLSTMModel, Seq2SeqGRUModel, Seq2SeqTransformerModel, SocialGRUModel, MultiModalGRUModel
 from models.train import train_model, train_multimodal_model, save_training_metrics
 from models.predict import generate_predictions, create_submission, generate_multimodal_predictions
 from models.metrics import compute_metrics, visualize_predictions
+
+import inspect
+print("→ train_model is coming from:", inspect.getsourcefile(train_model))
+print("→ train_model signature:", inspect.signature(train_model))
 
 def main():
     # Set random seeds for reproducibility
@@ -36,7 +40,7 @@ def main():
     batch_size = 64
     hidden_dim = 128
     num_layers = 2
-    teacher_forcing_ratio = 0.5
+    teacher_forcing_ratio = 0.0
     
     # Create the full dataset
     print("Creating datasets...")
@@ -64,7 +68,7 @@ def main():
     competition_test_loader = DataLoader(competition_test_dataset, batch_size=batch_size, shuffle=False)
     
     # Define model architecture
-    model_type = "multimodal_gru"  # Options: "lstm", "gru", "transformer", "social_gru", "multimodal_gru"
+    model_type = "lstm"  # Options: "lstm", "gru", "transformer", "social_gru", "multimodal_gru"
     
     # Set model name for logging
     model_name = f"{model_type}_h{hidden_dim}_l{num_layers}_b{batch_size}_p{scale_position}"
@@ -79,41 +83,6 @@ def main():
             output_seq_len=60,
             output_dim=2,
             num_layers=num_layers
-        )
-    elif model_type == "gru":
-        model = Seq2SeqGRUModel(
-            input_dim=6,
-            hidden_dim=hidden_dim,
-            output_seq_len=60,
-            output_dim=2,
-            num_layers=num_layers
-        )
-    elif model_type == "transformer":
-        model = Seq2SeqTransformerModel(
-            input_dim=6,
-            hidden_dim=hidden_dim,
-            output_seq_len=60,
-            output_dim=2,
-            num_heads=4,
-            num_layers=num_layers
-        )
-    elif model_type == "social_gru":
-        model = SocialGRUModel(
-            input_dim=6,
-            hidden_dim=hidden_dim,
-            output_seq_len=60,
-            output_dim=2,
-            num_layers=num_layers
-        )
-    elif model_type == "multimodal_gru":
-        num_modes = 3  # Number of possible future trajectories to predict
-        model = MultiModalGRUModel(
-            input_dim=6,
-            hidden_dim=hidden_dim,
-            output_seq_len=60,
-            output_dim=2,
-            num_layers=num_layers,
-            num_modes=num_modes
         )
     else:
         raise ValueError(f"Unknown model type: {model_type}")

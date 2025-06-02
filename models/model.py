@@ -9,80 +9,168 @@ from .social_modules import SocialContextEncoder
 from .multimodal_modules import MultiModalGRUDecoder
 
 class Seq2SeqLSTMModel(nn.Module):
-    """Sequence-to-sequence LSTM model for trajectory prediction"""
-    
+    """Sequence-to-sequence LSTM model for trajectory prediction, with a learnable start token."""
+
     def __init__(self, input_dim=6, hidden_dim=128, output_seq_len=60, output_dim=2, num_layers=2):
         super(Seq2SeqLSTMModel, self).__init__()
-        
-        # Encoder and decoder
+
+        # Encoder 和 Decoder
         self.encoder = LSTMEncoder(
             input_dim=input_dim,
             hidden_dim=hidden_dim,
             num_layers=num_layers
         )
-        
+
         self.decoder = LSTMDecoder(
             input_dim=output_dim,
             hidden_dim=hidden_dim,
             output_dim=output_dim,
             num_layers=num_layers
         )
-        
-        # Parameters
+
+        # 可学习的 start token，初始为 (1, 1, output_dim)，训练时会被更新
+        self.start_token = nn.Parameter(torch.randn(1, 1, output_dim) * 0.1)
+
+        # 其它参数
         self.output_seq_len = output_seq_len
         self.output_dim = output_dim
         self.hidden_dim = hidden_dim
-    
+
     def forward(self, data, teacher_forcing_ratio=0.5):
         """
         Forward pass through the network
-        
+
         Args:
             data: Dictionary containing:
                 - history: Shape [batch_size, num_agents, seq_len, feature_dim]
-                - future: Shape [batch_size, output_seq_len, output_dim] (only in training)
-            teacher_forcing_ratio: Probability of using teacher forcing (0-1)
-                
-        Returns:
-            Predicted trajectories: Shape [batch_size, output_seq_len, output_dim]
-        """
-        # Extract history data
-        history = data['history']
-        batch_size = history.shape[0]
-        
-        # Extract ego agent only
-        ego_history = history[:, 0, :, :]
-        
-        # Encode the history sequence
-        _, hidden = self.encoder(ego_history)
-        
-        # Determine if we're in training or inference mode
-        use_teacher_forcing = self.training and 'future' in data and torch.rand(1).item() < teacher_forcing_ratio
+                - future: Shape [batch_size, output_seq_len, output_dim] (only 在训练时使用)
+            teacher_forcing_ratio: 使用 teacher forcing 的概率 (0-1)
 
-        # Initialize output container
-        predictions = torch.zeros(batch_size, self.output_seq_len, self.output_dim, 
-                                 device=history.device)
-        
-        # FIXED: Initialize decoder input with the last position from history (x,y coordinates)
-        decoder_input = ego_history[:, -1:, :self.output_dim]
-        
-        # Iteratively decode the sequence
+        Returns:
+            predictions: Tensor of shape [batch_size, output_seq_len, output_dim]
+        """
+        history = data['history']                          # [B, num_agents, seq_len, feature_dim]
+        batch_size = history.shape[0]
+
+        # 只取 Ego Agent 的历史 (B, seq_len, feature_dim)
+        ego_history = history[:, 0, :, :]
+
+        # Encoder：得到最后一个隐藏状态 hidden
+        _, hidden = self.encoder(ego_history)
+
+        # 判断是否使用 teacher forcing
+        use_teacher_forcing = (
+            self.training
+            and 'future' in data
+            and torch.rand(1).item() < teacher_forcing_ratio
+        )
+
+        # 用于保存输出
+        predictions = torch.zeros(
+            batch_size,
+            self.output_seq_len,
+            self.output_dim,
+            device=history.device
+        )
+
+        # ——— 关键改动 ——–
+        # 用可学习的 start_token 作为 Decoder 的第一个输入
+        # self.start_token 的 shape=(1,1,output_dim)，.expand 后变为 (batch_size,1,output_dim)
+        decoder_input = self.start_token.expand(batch_size, -1, -1)
+        # ————————————
+
         for t in range(self.output_seq_len):
-            # Get prediction for current timestep
+            # Decoder 前向：输入 decoder_input + 上一个 hidden
             output, hidden = self.decoder(decoder_input, hidden)
-            
-            # Store prediction
+
+            # 存储当前时刻的预测
+            # output shape = [batch_size, 1, output_dim]
             predictions[:, t:t+1, :] = output
-            
-            # Update decoder input for next timestep
+
+            # 更新下一步的 decoder_input
             if use_teacher_forcing and t < self.output_seq_len - 1:
-                # Use ground truth as next input
+                # 如果用 teacher forcing，下一步输入是真实 ground-truth
                 decoder_input = data['future'][:, t:t+1, :]
             else:
-                # Use current prediction as next input
+                # 否则用模型当前预测的结果
                 decoder_input = output
-        
+
         return predictions
+# class Seq2SeqLSTMModel(nn.Module):
+#     """Sequence-to-sequence LSTM model for trajectory prediction"""
+    
+#     def __init__(self, input_dim=6, hidden_dim=128, output_seq_len=60, output_dim=2, num_layers=2):
+#         super(Seq2SeqLSTMModel, self).__init__()
+        
+#         # Encoder and decoder
+#         self.encoder = LSTMEncoder(
+#             input_dim=input_dim,
+#             hidden_dim=hidden_dim,
+#             num_layers=num_layers
+#         )
+        
+#         self.decoder = LSTMDecoder(
+#             input_dim=output_dim,
+#             hidden_dim=hidden_dim,
+#             output_dim=output_dim,
+#             num_layers=num_layers
+#         )
+        
+#         # Parameters
+#         self.output_seq_len = output_seq_len
+#         self.output_dim = output_dim
+#         self.hidden_dim = hidden_dim
+    
+#     def forward(self, data, teacher_forcing_ratio=0.5):
+#         """
+#         Forward pass through the network
+        
+#         Args:
+#             data: Dictionary containing:
+#                 - history: Shape [batch_size, num_agents, seq_len, feature_dim]
+#                 - future: Shape [batch_size, output_seq_len, output_dim] (only in training)
+#             teacher_forcing_ratio: Probability of using teacher forcing (0-1)
+                
+#         Returns:
+#             Predicted trajectories: Shape [batch_size, output_seq_len, output_dim]
+#         """
+#         # Extract history data
+#         history = data['history']
+#         batch_size = history.shape[0]
+        
+#         # Extract ego agent only
+#         ego_history = history[:, 0, :, :]
+        
+#         # Encode the history sequence
+#         _, hidden = self.encoder(ego_history)
+        
+#         # Determine if we're in training or inference mode
+#         use_teacher_forcing = self.training and 'future' in data and torch.rand(1).item() < teacher_forcing_ratio
+
+#         # Initialize output container
+#         predictions = torch.zeros(batch_size, self.output_seq_len, self.output_dim, 
+#                                  device=history.device)
+        
+#         # FIXED: Initialize decoder input with the last position from history (x,y coordinates)
+#         decoder_input = ego_history[:, -1:, :self.output_dim]
+        
+#         # Iteratively decode the sequence
+#         for t in range(self.output_seq_len):
+#             # Get prediction for current timestep
+#             output, hidden = self.decoder(decoder_input, hidden)
+            
+#             # Store prediction
+#             predictions[:, t:t+1, :] = output
+            
+#             # Update decoder input for next timestep
+#             if use_teacher_forcing and t < self.output_seq_len - 1:
+#                 # Use ground truth as next input
+#                 decoder_input = data['future'][:, t:t+1, :]
+#             else:
+#                 # Use current prediction as next input
+#                 decoder_input = output
+        
+#         return predictions
 
 
 class Seq2SeqGRUModel(nn.Module):

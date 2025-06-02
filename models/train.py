@@ -7,245 +7,298 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from datetime import datetime
 
-def save_training_metrics(metrics_dict, model_name="model", save_dir="logs"):
-    """
-    Save training metrics to CSV and JSON files and create visualization plots.
+# def save_training_metrics(metrics_dict, model_name="model", save_dir="logs"):
+#     """
+#     Save training metrics to CSV and JSON files and create visualization plots.
     
-    Args:
-        metrics_dict: Dictionary containing training/validation metrics by epoch
-        model_name: Name to use in saved files
-        save_dir: Directory to save metrics files
-    """
-    # Create logs directory if it doesn't exist
+#     Args:
+#         metrics_dict: Dictionary containing training/validation metrics by epoch
+#         model_name: Name to use in saved files
+#         save_dir: Directory to save metrics files
+#     """
+#     # Create logs directory if it doesn't exist
+#     os.makedirs(save_dir, exist_ok=True)
+    
+#     # Generate a timestamp for the log files
+#     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+#     base_filename = f"{model_name}_{timestamp}"
+    
+#     # Convert metrics dictionary to DataFrame for easier manipulation
+#     metrics_df = pd.DataFrame(metrics_dict)
+    
+#     # Save metrics to CSV
+#     csv_path = os.path.join(save_dir, f"{base_filename}_metrics.csv")
+#     metrics_df.to_csv(csv_path, index_label='epoch')
+#     print(f"Metrics saved to {csv_path}")
+    
+#     # Save metrics to JSON
+#     json_path = os.path.join(save_dir, f"{base_filename}_metrics.json")
+#     with open(json_path, 'w') as f:
+#         json.dump(metrics_dict, f, indent=2)
+#     print(f"Metrics saved to {json_path}")
+    
+#     # Create visualization directory
+#     viz_dir = os.path.join(save_dir, f"{base_filename}_plots")
+#     os.makedirs(viz_dir, exist_ok=True)
+    
+#     # Create training vs validation loss plot
+#     plt.figure(figsize=(10, 6))
+#     plt.plot(metrics_df['train_loss'], label='Training Loss')
+#     plt.plot(metrics_df['val_loss'], label='Validation Loss')
+#     plt.xlabel('Epoch')
+#     plt.ylabel('Loss')
+#     plt.title(f'{model_name} - Training and Validation Loss')
+#     plt.legend()
+#     plt.grid(True)
+#     plt.savefig(os.path.join(viz_dir, 'loss_curves.png'), dpi=300)
+#     plt.close()
+    
+#     # Create MAE/MSE plots for unnormalized metrics
+#     plt.figure(figsize=(10, 6))
+#     if 'train_mse_unnorm' in metrics_df.columns:
+#         plt.plot(metrics_df['train_mse_unnorm'], label='Train MSE')
+#     plt.plot(metrics_df['val_mse_unnorm'], label='Val MSE')
+#     plt.plot(metrics_df['val_mae'], label='Val MAE')
+#     plt.xlabel('Epoch')
+#     plt.ylabel('Error (meters)')
+#     plt.title(f'{model_name} - Training and Validation Error Metrics')
+#     plt.legend()
+#     plt.grid(True)
+#     plt.savefig(os.path.join(viz_dir, 'error_metrics.png'), dpi=300)
+#     plt.close()
+    
+#     # If learning rate is tracked, plot it
+#     if 'learning_rate' in metrics_df.columns:
+#         plt.figure(figsize=(10, 6))
+#         plt.plot(metrics_df['learning_rate'])
+#         plt.xlabel('Epoch')
+#         plt.ylabel('Learning Rate')
+#         plt.title(f'{model_name} - Learning Rate Schedule')
+#         plt.yscale('log')
+#         plt.grid(True)
+#         plt.savefig(os.path.join(viz_dir, 'learning_rate.png'), dpi=300)
+#         plt.close()
+    
+#     # For multimodal models, if physics loss is tracked
+#     if 'train_physics_loss' in metrics_df.columns:
+#         plt.figure(figsize=(10, 6))
+#         plt.plot(metrics_df['train_physics_loss'], label='Train Physics Loss')
+#         plt.plot(metrics_df['val_physics_loss'], label='Val Physics Loss')
+#         plt.xlabel('Epoch')
+#         plt.ylabel('Physics Loss')
+#         plt.title(f'{model_name} - Physics Constraint Loss')
+#         plt.legend()
+#         plt.grid(True)
+#         plt.savefig(os.path.join(viz_dir, 'physics_loss.png'), dpi=300)
+#         plt.close()
+    
+#     return csv_path, json_path, viz_dir
+
+def save_training_metrics(metrics_history, model_name, save_dir):
+    import os
+    import json
+    import pandas as pd
+    import matplotlib.pyplot as plt
+
     os.makedirs(save_dir, exist_ok=True)
-    
-    # Generate a timestamp for the log files
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    base_filename = f"{model_name}_{timestamp}"
-    
-    # Convert metrics dictionary to DataFrame for easier manipulation
-    metrics_df = pd.DataFrame(metrics_dict)
-    
-    # Save metrics to CSV
-    csv_path = os.path.join(save_dir, f"{base_filename}_metrics.csv")
-    metrics_df.to_csv(csv_path, index_label='epoch')
-    print(f"Metrics saved to {csv_path}")
-    
-    # Save metrics to JSON
-    json_path = os.path.join(save_dir, f"{base_filename}_metrics.json")
+
+    # 1) Convert history dict → DataFrame
+    metrics_df = pd.DataFrame(metrics_history)
+
+    # 2) Save raw CSV + JSON
+    csv_path = os.path.join(save_dir, f"{model_name}_metrics.csv")
+    json_path = os.path.join(save_dir, f"{model_name}_metrics.json")
+    metrics_df.to_csv(csv_path, index=False)
     with open(json_path, 'w') as f:
-        json.dump(metrics_dict, f, indent=2)
-    print(f"Metrics saved to {json_path}")
-    
-    # Create visualization directory
-    viz_dir = os.path.join(save_dir, f"{base_filename}_plots")
+        json.dump(metrics_history, f, indent=2)
+
+    # 3) Plot curves (use the correct keys!)
+    viz_dir = os.path.join(save_dir, "plots")
     os.makedirs(viz_dir, exist_ok=True)
-    
-    # Create training vs validation loss plot
-    plt.figure(figsize=(10, 6))
-    plt.plot(metrics_df['train_loss'], label='Training Loss')
-    plt.plot(metrics_df['val_loss'], label='Validation Loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.title(f'{model_name} - Training and Validation Loss')
+
+    # -- Training Hybrid Loss --
+    plt.figure()
+    plt.plot(metrics_df['train_hybrid_loss'], label='Training Hybrid Loss')
+    plt.plot(metrics_df['val_hybrid_loss'], label='Validation Hybrid Loss')
+    plt.xlabel("Epoch")
+    plt.ylabel("Hybrid Loss")
+    plt.title("Hybrid Loss (MSE + α·MAE) per Epoch")
     plt.legend()
-    plt.grid(True)
-    plt.savefig(os.path.join(viz_dir, 'loss_curves.png'), dpi=300)
+    plt.savefig(os.path.join(viz_dir, "hybrid_loss.png"))
     plt.close()
-    
-    # Create MAE/MSE plots for unnormalized metrics
-    plt.figure(figsize=(10, 6))
-    if 'train_mse_unnorm' in metrics_df.columns:
-        plt.plot(metrics_df['train_mse_unnorm'], label='Train MSE')
-    plt.plot(metrics_df['val_mse_unnorm'], label='Val MSE')
-    plt.plot(metrics_df['val_mae'], label='Val MAE')
-    plt.xlabel('Epoch')
-    plt.ylabel('Error (meters)')
-    plt.title(f'{model_name} - Training and Validation Error Metrics')
+
+    # -- Unnormalized MSE, MAE (optional) --
+    plt.figure()
+    plt.plot(metrics_df['train_mse_unnorm'], label='Train MSE (raw)')
+    plt.plot(metrics_df['val_mse_unnorm'], label='Val MSE (raw)')
+    plt.xlabel("Epoch")
+    plt.ylabel("MSE (physical)")
+    plt.title("Unnormalized MSE per Epoch")
     plt.legend()
-    plt.grid(True)
-    plt.savefig(os.path.join(viz_dir, 'error_metrics.png'), dpi=300)
+    plt.savefig(os.path.join(viz_dir, "mse_unnorm.png"))
     plt.close()
-    
-    # If learning rate is tracked, plot it
-    if 'learning_rate' in metrics_df.columns:
-        plt.figure(figsize=(10, 6))
-        plt.plot(metrics_df['learning_rate'])
-        plt.xlabel('Epoch')
-        plt.ylabel('Learning Rate')
-        plt.title(f'{model_name} - Learning Rate Schedule')
-        plt.yscale('log')
-        plt.grid(True)
-        plt.savefig(os.path.join(viz_dir, 'learning_rate.png'), dpi=300)
-        plt.close()
-    
-    # For multimodal models, if physics loss is tracked
-    if 'train_physics_loss' in metrics_df.columns:
-        plt.figure(figsize=(10, 6))
-        plt.plot(metrics_df['train_physics_loss'], label='Train Physics Loss')
-        plt.plot(metrics_df['val_physics_loss'], label='Val Physics Loss')
-        plt.xlabel('Epoch')
-        plt.ylabel('Physics Loss')
-        plt.title(f'{model_name} - Physics Constraint Loss')
-        plt.legend()
-        plt.grid(True)
-        plt.savefig(os.path.join(viz_dir, 'physics_loss.png'), dpi=300)
-        plt.close()
-    
+
+    plt.figure()
+    plt.plot(metrics_df['val_mae_unnorm'], label='Val MAE (raw)')
+    plt.xlabel("Epoch")
+    plt.ylabel("MAE (physical)")
+    plt.title("Unnormalized MAE (validation) per Epoch")
+    plt.legend()
+    plt.savefig(os.path.join(viz_dir, "mae_unnorm.png"))
+    plt.close()
+
     return csv_path, json_path, viz_dir
 
-# Now modify the train_model function to track metrics
-def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_patience=10, 
-                lr=1e-3, weight_decay=1e-4, lr_step_size=20, lr_gamma=0.25, teacher_forcing_ratio=0.5,
-                model_name="seq2seq_model", save_logs=True):
+def train_model(
+    model,
+    train_loader,
+    val_loader,
+    num_epochs=100,
+    early_stopping_patience=10,
+    lr=1e-3,
+    weight_decay=1e-4,
+    lr_step_size=20,
+    lr_gamma=0.25,
+    teacher_forcing_ratio=0.5,
+    model_name="seq2seq_model",
+    save_logs=True
+):
     """
-    Train the model with validation
-    
-    Args:
-        model: The model to train
-        train_loader: DataLoader for training data
-        val_loader: DataLoader for validation data
-        num_epochs: Maximum number of epochs to train
-        early_stopping_patience: Number of epochs to wait for improvement
-        lr: Initial learning rate
-        weight_decay: Weight decay for optimizer
-        lr_step_size: Epochs between learning rate reductions
-        lr_gamma: Factor to reduce learning rate
-        teacher_forcing_ratio: Probability of using teacher forcing during training (0-1)
-        model_name: Name to use in saved files
-        save_logs: Whether to save training logs
+    使用“混合损失 (MSE + α·MAE)”训练，同时仍然采用 scale_position 反归一化：
+    1) 在归一化空间里计算 hybrid_loss = MSE(pred_norm, gt_norm) + α·MAE(pred_norm, gt_norm)
+    2) 将 pred_norm * scale_position → pred_raw，计算物理尺度下的 unnorm MSE/MAE
+    3) Early‐stopping 依据 hybrid_loss
     """
-    # Device configuration
+
     device = model.device if hasattr(model, 'device') else next(model.parameters()).device
-    
-    # Loss function and optimizer
-    criterion = nn.MSELoss()
+
+    # 定义归一化空间下的 MSE / MAE
+    mse_criterion = nn.MSELoss(reduction='mean')
+    mae_criterion = nn.L1Loss(reduction='mean')
+    alpha = 0.5  # 你可以调节 α 的值
+
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
-    
-    # Dictionary to store metrics for each epoch
+
     metrics_history = {
         'epoch': [],
         'learning_rate': [],
-        'train_loss': [],
+        'train_hybrid_loss': [],
         'train_mse_unnorm': [],
-        'val_loss': [],
-        'val_mae': [],
-        'val_mse': [],
+        'val_hybrid_loss': [],
+        'val_mae_unnorm': [],
         'val_mse_unnorm': []
     }
-    
-    # Training loop
+
     best_val_loss = float('inf')
     no_improvement = 0
-    
+
     progress_bar = tqdm(range(num_epochs), desc="Epoch", unit="epoch")
     for epoch in progress_bar:
-        # Training phase
+        # ===== 训练阶段 =====
         model.train()
-        train_loss = 0.0
-        train_mse_unnorm = 0.0
-        
+        running_hybrid_loss = 0.0
+        running_mse_unnorm = 0.0
+
         for batch in train_loader:
-            # Move data to device
-            for key in batch:
-                if isinstance(batch[key], torch.Tensor):
-                    batch[key] = batch[key].to(device)
-            
-            # Forward pass (with teacher forcing during training)
+            # 把所有 tensor 移到 device
+            for k, v in batch.items():
+                if isinstance(v, torch.Tensor):
+                    batch[k] = v.to(device)
+
             optimizer.zero_grad()
-            predictions = model(batch, teacher_forcing_ratio=teacher_forcing_ratio)
-            
-            # Calculate loss
-            loss = criterion(predictions, batch['future'])
-            
-            # Calculate unnormalized training MSE
-            pred_unnorm = predictions * batch['scale_position'].view(-1, 1, 1)
-            future_unnorm = batch['future'] * batch['scale_position'].view(-1, 1, 1)
-            train_mse_unnorm += nn.MSELoss()(pred_unnorm, future_unnorm).item()
-            
-            # Backward and optimize
-            loss.backward()
+            # 预测：得到 normalized 空间下 [B,60,2]
+            preds_norm = model(batch, teacher_forcing_ratio=teacher_forcing_ratio)
+
+            # —— 1) 归一化空间下的混合损失 —— 
+            mse_loss = mse_criterion(preds_norm, batch['future'])
+            mae_loss = mae_criterion(preds_norm, batch['future'])
+            hybrid_loss = mse_loss + alpha * mae_loss
+            running_hybrid_loss += hybrid_loss.item()
+
+            # —— 2) 物理空间下的 unnorm MSE —— 
+            #    pred_raw = preds_norm * scale_position
+            #    future_raw = batch['future'] * scale_position
+            scale_pos = batch['scale_position'].view(-1, 1, 1)  # [B,1,1]
+            preds_raw = preds_norm * scale_pos       # [B,60,2]
+            gt_raw    = batch['future'] * scale_pos  # [B,60,2]
+
+            # nn.MSELoss(reduction='mean') 本身已经对 60 帧取平均
+            mse_phys = mse_criterion(preds_raw, gt_raw)
+            running_mse_unnorm += mse_phys.item()
+
+            # —— 3) 反向传播 —— 
+            hybrid_loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
             optimizer.step()
-            
-            train_loss += loss.item()
-        
-        # Calculate average training loss
-        train_loss /= len(train_loader)
-        train_mse_unnorm /= len(train_loader)
-        
-        # Validation phase
+
+        avg_train_hybrid = running_hybrid_loss / len(train_loader)
+        avg_train_mse_unnorm = running_mse_unnorm / len(train_loader)
+
+        # ===== 验证阶段 =====
         model.eval()
-        val_loss = 0.0
-        val_mae = 0.0
-        val_mse = 0.0
-        val_mse_unnorm = 0.0
-        
+        running_val_hybrid = 0.0
+        running_val_mae_unnorm = 0.0
+        running_val_mse_unnorm = 0.0
+
         with torch.no_grad():
             for batch in val_loader:
-                # Move data to device
-                for key in batch:
-                    if isinstance(batch[key], torch.Tensor):
-                        batch[key] = batch[key].to(device)
-                
-                # Forward pass (no teacher forcing during validation)
-                predictions = model(batch, teacher_forcing_ratio=0.0)
-                
-                # Calculate normalized loss
-                val_loss += criterion(predictions, batch['future']).item()
-                
-                # Calculate unnormalized metrics
-                pred_unnorm = predictions * batch['scale_position'].view(-1, 1, 1)
-                future_unnorm = batch['future'] * batch['scale_position'].view(-1, 1, 1)
-                
-                val_mae += nn.L1Loss()(pred_unnorm, future_unnorm).item()
-                val_mse += nn.MSELoss()(pred_unnorm, future_unnorm).item()
-                val_mse_unnorm += val_mse
-        
-        # Calculate average validation losses
-        val_loss /= len(val_loader)
-        val_mae /= len(val_loader)
-        val_mse /= len(val_loader)
-        val_mse_unnorm /= len(val_loader)
-        
-        # Update learning rate
+                for k, v in batch.items():
+                    if isinstance(v, torch.Tensor):
+                        batch[k] = v.to(device)
+
+                preds_norm = model(batch, teacher_forcing_ratio=0.0)
+
+                mse_loss = mse_criterion(preds_norm, batch['future'])
+                mae_loss = mae_criterion(preds_norm, batch['future'])
+                hybrid_loss = mse_loss + alpha * mae_loss
+                running_val_hybrid += hybrid_loss.item()
+
+                scale_pos = batch['scale_position'].view(-1, 1, 1)
+                preds_raw = preds_norm * scale_pos       # [B,60,2]
+                gt_raw    = batch['future'] * scale_pos  # [B,60,2]
+
+                mae_phys = mae_criterion(preds_raw, gt_raw)
+                mse_phys = mse_criterion(preds_raw, gt_raw)
+                running_val_mae_unnorm += mae_phys.item()
+                running_val_mse_unnorm += mse_phys.item()
+
+        avg_val_hybrid = running_val_hybrid / len(val_loader)
+        avg_val_mae_unnorm = running_val_mae_unnorm / len(val_loader)
+        avg_val_mse_unnorm = running_val_mse_unnorm / len(val_loader)
+
         current_lr = optimizer.param_groups[0]['lr']
         scheduler.step()
-        
-        # Store metrics for this epoch
+
+        # 记录指标
         metrics_history['epoch'].append(epoch)
         metrics_history['learning_rate'].append(current_lr)
-        metrics_history['train_loss'].append(train_loss)
-        metrics_history['train_mse_unnorm'].append(train_mse_unnorm)
-        metrics_history['val_loss'].append(val_loss)
-        metrics_history['val_mae'].append(val_mae)
-        metrics_history['val_mse'].append(val_mse)
-        metrics_history['val_mse_unnorm'].append(val_mse_unnorm)
-        
-        # Update progress bar with metrics
+        metrics_history['train_hybrid_loss'].append(avg_train_hybrid)
+        metrics_history['train_mse_unnorm'].append(avg_train_mse_unnorm)
+        metrics_history['val_hybrid_loss'].append(avg_val_hybrid)
+        metrics_history['val_mae_unnorm'].append(avg_val_mae_unnorm)
+        metrics_history['val_mse_unnorm'].append(avg_val_mse_unnorm)
+
         progress_bar.set_postfix({
-            'lr': f"{current_lr:.6f}",
-            'train_mse': f"{train_loss:.4f}",
-            'train_mse_unnorm': f"{train_mse_unnorm:.4f}",
-            'val_mse': f"{val_loss:.4f}",
-            'val_mae': f"{val_mae:.4f}",
-            'val_mse_unnorm': f"{val_mse:.4f}"
+            'lr':                 f"{current_lr:.6f}",
+            'train_hybrid_loss':  f"{avg_train_hybrid:.4f}",
+            'train_mse_unnorm':   f"{avg_train_mse_unnorm:.4f}",
+            'val_hybrid_loss':    f"{avg_val_hybrid:.4f}",
+            'val_mae_unnorm':     f"{avg_val_mae_unnorm:.4f}"
         })
-        
-        # Save the best model
-        if val_loss < best_val_loss - 1e-3:
-            best_val_loss = val_loss
+
+        # 保存最佳模型
+        if avg_val_hybrid < best_val_loss - 1e-3:
+            best_val_loss = avg_val_hybrid
             no_improvement = 0
-            # Add best epoch marker to metrics history
             checkpoint_info = {
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                'val_loss': val_loss,
-                'val_mae': val_mae,
-                'val_mse': val_mse,
-                'metrics_history': metrics_history  # Save metrics history with the checkpoint
+                'val_loss': avg_val_hybrid,
+                'val_mae': avg_val_mae_unnorm,
+                'val_mse': avg_val_mse_unnorm,
+                'metrics_history': metrics_history
             }
             torch.save(checkpoint_info, "best_model.pth")
         else:
@@ -253,22 +306,23 @@ def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_
             if no_improvement >= early_stopping_patience:
                 progress_bar.write("Early stopping!")
                 break
-    
-    # Save metrics after training
+
     if save_logs:
         csv_path, json_path, viz_dir = save_training_metrics(
-            metrics_history, 
+            metrics_history,
             model_name=model_name,
             save_dir="logs"
         )
         progress_bar.write(f"Training metrics saved to {csv_path} and {json_path}")
         progress_bar.write(f"Visualization plots saved to {viz_dir}")
-    
-    # Load the best model
+
+    # 加载最佳模型
     checkpoint = torch.load("best_model.pth")
     model.load_state_dict(checkpoint['model_state_dict'])
-    
     return model, checkpoint, metrics_history
+
+
+
 
 def train_multimodal_model(model, train_loader, val_loader, num_epochs=100, early_stopping_patience=10, 
                 lr=1e-3, weight_decay=1e-4, lr_step_size=20, lr_gamma=0.25, teacher_forcing_ratio=0.5,
@@ -499,138 +553,138 @@ def train_multimodal_model(model, train_loader, val_loader, num_epochs=100, earl
     
     return model, checkpoint, metrics_history
 
-def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_patience=10, 
-                lr=1e-3, weight_decay=1e-4, lr_step_size=20, lr_gamma=0.25, teacher_forcing_ratio=0.5):
-    """
-    Train the model with validation
+# def train_model(model, train_loader, val_loader, num_epochs=100, early_stopping_patience=10, 
+#                 lr=1e-3, weight_decay=1e-4, lr_step_size=20, lr_gamma=0.25, teacher_forcing_ratio=0.5):
+#     """
+#     Train the model with validation
     
-    Args:
-        model: The model to train
-        train_loader: DataLoader for training data
-        val_loader: DataLoader for validation data
-        num_epochs: Maximum number of epochs to train
-        early_stopping_patience: Number of epochs to wait for improvement
-        lr: Initial learning rate
-        weight_decay: Weight decay for optimizer
-        lr_step_size: Epochs between learning rate reductions
-        lr_gamma: Factor to reduce learning rate
-        teacher_forcing_ratio: Probability of using teacher forcing during training (0-1)
-    """
-    # Device configuration
-    device = model.device if hasattr(model, 'device') else next(model.parameters()).device
+#     Args:
+#         model: The model to train
+#         train_loader: DataLoader for training data
+#         val_loader: DataLoader for validation data
+#         num_epochs: Maximum number of epochs to train
+#         early_stopping_patience: Number of epochs to wait for improvement
+#         lr: Initial learning rate
+#         weight_decay: Weight decay for optimizer
+#         lr_step_size: Epochs between learning rate reductions
+#         lr_gamma: Factor to reduce learning rate
+#         teacher_forcing_ratio: Probability of using teacher forcing during training (0-1)
+#     """
+#     # Device configuration
+#     device = model.device if hasattr(model, 'device') else next(model.parameters()).device
     
-    # Loss function and optimizer
-    criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
+#     # Loss function and optimizer
+#     criterion = nn.MSELoss()
+#     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+#     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=lr_step_size, gamma=lr_gamma)
     
-    # Training loop
-    best_val_loss = float('inf')
-    no_improvement = 0
+#     # Training loop
+#     best_val_loss = float('inf')
+#     no_improvement = 0
     
-    progress_bar = tqdm(range(num_epochs), desc="Epoch", unit="epoch")
-    for epoch in progress_bar:
-        # Training phase
-        model.train()
-        train_loss = 0.0
-        train_mse_unnorm = 0.0
+#     progress_bar = tqdm(range(num_epochs), desc="Epoch", unit="epoch")
+#     for epoch in progress_bar:
+#         # Training phase
+#         model.train()
+#         train_loss = 0.0
+#         train_mse_unnorm = 0.0
         
-        for batch in train_loader:
-            # Move data to device
-            for key in batch:
-                if isinstance(batch[key], torch.Tensor):
-                    batch[key] = batch[key].to(device)
+#         for batch in train_loader:
+#             # Move data to device
+#             for key in batch:
+#                 if isinstance(batch[key], torch.Tensor):
+#                     batch[key] = batch[key].to(device)
             
-            # Forward pass (with teacher forcing during training)
-            optimizer.zero_grad()
-            predictions = model(batch, teacher_forcing_ratio=teacher_forcing_ratio)
+#             # Forward pass (with teacher forcing during training)
+#             optimizer.zero_grad()
+#             predictions = model(batch, teacher_forcing_ratio=teacher_forcing_ratio)
             
-            # Calculate loss
-            loss = criterion(predictions, batch['future'])
+#             # Calculate loss
+#             loss = criterion(predictions, batch['future'])
             
-            # Calculate unnormalized training MSE
-            pred_unnorm = predictions * batch['scale_position'].view(-1, 1, 1)
-            future_unnorm = batch['future'] * batch['scale_position'].view(-1, 1, 1)
-            train_mse_unnorm += nn.MSELoss()(pred_unnorm, future_unnorm).item()
+#             # Calculate unnormalized training MSE
+#             pred_unnorm = predictions * batch['scale_position'].view(-1, 1, 1)
+#             future_unnorm = batch['future'] * batch['scale_position'].view(-1, 1, 1)
+#             train_mse_unnorm += nn.MSELoss()(pred_unnorm, future_unnorm).item()
             
-            # Backward and optimize
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
-            optimizer.step()
+#             # Backward and optimize
+#             loss.backward()
+#             torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
+#             optimizer.step()
             
-            train_loss += loss.item()
+#             train_loss += loss.item()
         
-        # Calculate average training loss
-        train_loss /= len(train_loader)
-        train_mse_unnorm /= len(train_loader)
+#         # Calculate average training loss
+#         train_loss /= len(train_loader)
+#         train_mse_unnorm /= len(train_loader)
         
-        # Validation phase
-        model.eval()
-        val_loss = 0.0
-        val_mae = 0.0
-        val_mse = 0.0
+#         # Validation phase
+#         model.eval()
+#         val_loss = 0.0
+#         val_mae = 0.0
+#         val_mse = 0.0
         
-        with torch.no_grad():
-            for batch in val_loader:
-                # Move data to device
-                for key in batch:
-                    if isinstance(batch[key], torch.Tensor):
-                        batch[key] = batch[key].to(device)
+#         with torch.no_grad():
+#             for batch in val_loader:
+#                 # Move data to device
+#                 for key in batch:
+#                     if isinstance(batch[key], torch.Tensor):
+#                         batch[key] = batch[key].to(device)
                 
-                # Forward pass (no teacher forcing during validation)
-                predictions = model(batch, teacher_forcing_ratio=0.0)
+#                 # Forward pass (no teacher forcing during validation)
+#                 predictions = model(batch, teacher_forcing_ratio=0.0)
                 
-                # Calculate normalized loss
-                val_loss += criterion(predictions, batch['future']).item()
+#                 # Calculate normalized loss
+#                 val_loss += criterion(predictions, batch['future']).item()
                 
-                # Calculate unnormalized metrics
-                pred_unnorm = predictions * batch['scale_position'].view(-1, 1, 1)
-                future_unnorm = batch['future'] * batch['scale_position'].view(-1, 1, 1)
+#                 # Calculate unnormalized metrics
+#                 pred_unnorm = predictions * batch['scale_position'].view(-1, 1, 1)
+#                 future_unnorm = batch['future'] * batch['scale_position'].view(-1, 1, 1)
                 
-                val_mae += nn.L1Loss()(pred_unnorm, future_unnorm).item()
-                val_mse += nn.MSELoss()(pred_unnorm, future_unnorm).item()
+#                 val_mae += nn.L1Loss()(pred_unnorm, future_unnorm).item()
+#                 val_mse += nn.MSELoss()(pred_unnorm, future_unnorm).item()
         
-        # Calculate average validation losses
-        val_loss /= len(val_loader)
-        val_mae /= len(val_loader)
-        val_mse /= len(val_loader)
+#         # Calculate average validation losses
+#         val_loss /= len(val_loader)
+#         val_mae /= len(val_loader)
+#         val_mse /= len(val_loader)
         
-        # Update learning rate
-        scheduler.step()
+#         # Update learning rate
+#         scheduler.step()
         
-        # Update progress bar with metrics
-        progress_bar.set_postfix({
-            'lr': f"{optimizer.param_groups[0]['lr']:.6f}",
-            'train_mse': f"{train_loss:.4f}",
-            'train_mse_unnorm': f"{train_mse_unnorm:.4f}",
-            'val_mse': f"{val_loss:.4f}",
-            'val_mae': f"{val_mae:.4f}",
-            'val_mse_unnorm': f"{val_mse:.4f}"
-        })
+#         # Update progress bar with metrics
+#         progress_bar.set_postfix({
+#             'lr': f"{optimizer.param_groups[0]['lr']:.6f}",
+#             'train_mse': f"{train_loss:.4f}",
+#             'train_mse_unnorm': f"{train_mse_unnorm:.4f}",
+#             'val_mse': f"{val_loss:.4f}",
+#             'val_mae': f"{val_mae:.4f}",
+#             'val_mse_unnorm': f"{val_mse:.4f}"
+#         })
         
-        # Save the best model
-        if val_loss < best_val_loss - 1e-3:
-            best_val_loss = val_loss
-            no_improvement = 0
-            torch.save({
-                'epoch': epoch,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'val_loss': val_loss,
-                'val_mae': val_mae,
-                'val_mse': val_mse
-            }, "best_model.pth")
-        else:
-            no_improvement += 1
-            if no_improvement >= early_stopping_patience:
-                progress_bar.write("Early stopping!")
-                break
+#         # Save the best model
+#         if val_loss < best_val_loss - 1e-3:
+#             best_val_loss = val_loss
+#             no_improvement = 0
+#             torch.save({
+#                 'epoch': epoch,
+#                 'model_state_dict': model.state_dict(),
+#                 'optimizer_state_dict': optimizer.state_dict(),
+#                 'val_loss': val_loss,
+#                 'val_mae': val_mae,
+#                 'val_mse': val_mse
+#             }, "best_model.pth")
+#         else:
+#             no_improvement += 1
+#             if no_improvement >= early_stopping_patience:
+#                 progress_bar.write("Early stopping!")
+#                 break
     
-    # Load the best model
-    checkpoint = torch.load("best_model.pth")
-    model.load_state_dict(checkpoint['model_state_dict'])
+#     # Load the best model
+#     checkpoint = torch.load("best_model.pth")
+#     model.load_state_dict(checkpoint['model_state_dict'])
     
-    return model, checkpoint
+#     return model, checkpoint
 
 def physics_constraint_loss(predictions, dt=0.1, scale_factor=15.0):
     """
