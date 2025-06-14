@@ -11,7 +11,8 @@
 /logs
 /old_submission
 /data_exploration
-
+/trained_models
+gpu.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

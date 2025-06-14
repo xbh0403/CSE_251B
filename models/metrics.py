@@ -13,7 +13,11 @@ def compute_metrics(predictions, ground_truth, scale_factor=None):
         scale_factor: Optional scale factor for denormalization
         
     Returns:
-        Dictionary of metrics {'MAE': mae_value, 'MSE': mse_value}
+        Dictionary of metrics containing the following keys:
+            'MAE' → Mean Absolute Error
+            'MSE' → Mean Squared Error
+            'ADE' → Average Displacement Error
+            'FDE' → Final Displacement Error
     """
     # Apply scaling if provided
     if scale_factor is not None:
@@ -42,16 +46,32 @@ def compute_metrics(predictions, ground_truth, scale_factor=None):
             predictions = predictions * scale_factor
             ground_truth = ground_truth * scale_factor
     
+    # Compute MAE and MSE using PyTorch or NumPy operations depending on the input type
     if isinstance(predictions, torch.Tensor):
         mae = F.l1_loss(predictions, ground_truth).item()
         mse = F.mse_loss(predictions, ground_truth).item()
-    else: # Assuming numpy array
-        mae = np.mean(np.abs(predictions - ground_truth))
-        mse = np.mean((predictions - ground_truth)**2)
-    
+
+        # Convert to numpy for ADE/FDE calculation (safer for broadcasting and to avoid additional GPU ops)
+        preds_np = predictions.detach().cpu().numpy()
+        gt_np = ground_truth.detach().cpu().numpy()
+    else:  # NumPy arrays
+        preds_np = predictions
+        gt_np = ground_truth
+        mae = np.mean(np.abs(preds_np - gt_np))
+        mse = np.mean((preds_np - gt_np) ** 2)
+
+    # Average Displacement Error (ADE) and Final Displacement Error (FDE)
+    # ADE: Mean Euclidean distance over all timesteps and samples
+    # FDE: Mean Euclidean distance at the final timestep
+    displacement = np.linalg.norm(preds_np - gt_np, axis=2)  # Shape: [batch, seq_len]
+    ade = np.mean(displacement)
+    fde = np.mean(displacement[:, -1])
+
     return {
         'MAE': mae,
-        'MSE': mse
+        'MSE': mse,
+        'ADE': ade,
+        'FDE': fde
     }
 
 def visualize_predictions(history, predictions, ground_truth=None, num_examples=5):
